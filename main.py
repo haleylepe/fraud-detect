@@ -16,6 +16,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from detoxify import Detoxify
+from rules import run_rules
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -87,9 +88,10 @@ async def analyze(req: AnalyzeRequest):
     # Detoxify returns numpy floats; convert to plain Python floats for JSON
     detoxify_scores = {k: round(float(v), 4) for k, v in raw_scores.items()}
 
-    # --- Step 3: Signal rules (placeholder until Session 2) ---
-    # Will be replaced with: from rules import run_rules; triggered = run_rules(text)
-    triggered_rules: list[RuleResult] = []
+    # --- Step 3: Signal rules ---
+    toxicity_for_rules = detoxify_scores.get("toxicity", 0.0)
+    raw_rules = run_rules(text, detoxify_toxicity=toxicity_for_rules)
+    triggered_rules = [RuleResult(**r) for r in raw_rules]
 
     # --- Step 4: LLM explanation (placeholder until Session 3) ---
     # Will be replaced with: from explainer import generate_explanation
