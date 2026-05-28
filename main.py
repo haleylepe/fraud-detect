@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from detoxify import Detoxify
 from rules import run_rules
+from explainer import generate_explanation
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -93,11 +94,11 @@ async def analyze(req: AnalyzeRequest):
     raw_rules = run_rules(text, detoxify_toxicity=toxicity_for_rules)
     triggered_rules = [RuleResult(**r) for r in raw_rules]
 
-    # --- Step 4: LLM explanation (placeholder until Session 3) ---
-    # Will be replaced with: from explainer import generate_explanation
-    explanation = (
-        "Explanation generation will be available after Session 3. "
-        "Check Detoxify scores and triggered rules above for preliminary signals."
+    # --- Step 4: LLM explanation ---
+    explanation = generate_explanation(
+        text=text,
+        detoxify_scores=detoxify_scores,
+        triggered_rules=raw_rules,
     )
 
     # --- Step 5: Verdict ---
