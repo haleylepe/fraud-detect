@@ -1,0 +1,7 @@
+venv/
+path/
+__pycache__/
+*.pyc
+.env
+data/*.csv
+data/jigsaw-toxic-comment-classification-challenge/
