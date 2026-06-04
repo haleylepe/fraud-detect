@@ -1,568 +1,1925 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fraud Review Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg:        #f7f8fa;
-      --surface:   #ffffff;
-      --border:    #e4e7ec;
-      --border-2:  #d0d5dd;
-      --text-1:    #101828;
-      --text-2:    #475467;
-      --text-3:    #98a2b3;
-      --blue:      #2563eb;
-      --blue-light:#eff4ff;
-      --blue-mid:  #c7d7fe;
-      --green:     #16a34a;
-      --green-light:#f0fdf4;
-      --green-mid: #bbf7d0;
-      --red:       #dc2626;
-      --red-light: #fef2f2;
-      --red-mid:   #fecaca;
-      --radius:    10px;
-      --shadow:    0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
-      --shadow-md: 0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
-    }
-
-    body {
-      font-family: 'IBM Plex Sans', sans-serif;
-      background: var(--bg);
-      color: var(--text-1);
-      min-height: 100vh;
-      padding: 0;
-    }
-
-    /* ── Header ── */
-    header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 0 32px;
-      height: 56px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 600;
-      font-size: 15px;
-      color: var(--text-1);
-      letter-spacing: -.2px;
-    }
-    .logo-icon {
-      width: 28px; height: 28px;
-      background: var(--blue);
-      border-radius: 7px;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .logo-icon svg { width: 16px; height: 16px; }
-    .header-tag {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 11px;
-      color: var(--text-3);
-      letter-spacing: .4px;
-    }
-
-    /* ── Layout ── */
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 40px 24px 80px;
-    }
-
-    .page-title {
-      font-size: 22px;
-      font-weight: 600;
-      letter-spacing: -.4px;
-      margin-bottom: 4px;
-    }
-    .page-sub {
-      font-size: 14px;
-      color: var(--text-2);
-      margin-bottom: 32px;
-    }
-
-    /* ── Input card ── */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 24px;
-      margin-bottom: 20px;
-    }
-    .card-label {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-2);
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    textarea {
-      width: 100%;
-      min-height: 130px;
-      border: 1px solid var(--border-2);
-      border-radius: 8px;
-      padding: 12px 14px;
-      font-family: 'IBM Plex Sans', sans-serif;
-      font-size: 14px;
-      color: var(--text-1);
-      resize: vertical;
-      outline: none;
-      transition: border-color .15s, box-shadow .15s;
-      background: var(--bg);
-    }
-    textarea:focus {
-      border-color: var(--blue);
-      box-shadow: 0 0 0 3px rgba(37,99,235,.12);
-      background: var(--surface);
-    }
-    textarea::placeholder { color: var(--text-3); }
-
-    .input-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 14px;
-    }
-    #charCount {
-      font-size: 12px;
-      color: var(--text-3);
-      font-family: 'IBM Plex Mono', monospace;
-    }
-
-    button {
-      background: var(--blue);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 9px 20px;
-      font-family: 'IBM Plex Sans', sans-serif;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: background .15s, transform .1s, opacity .15s;
-    }
-    button:hover:not(:disabled) { background: #1d4ed8; }
-    button:active:not(:disabled) { transform: scale(.98); }
-    button:disabled { opacity: .5; cursor: not-allowed; }
-
-    .spinner {
-      width: 14px; height: 14px;
-      border: 2px solid rgba(255,255,255,.3);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-      display: none;
-    }
-    button.loading .spinner { display: block; }
-    button.loading .btn-text { opacity: .7; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── Results ── */
-    #results {
-      display: none;
-      animation: fadeUp .3s ease;
-    }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Verdict banner */
-    .verdict-banner {
-      border-radius: var(--radius);
-      padding: 20px 24px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 16px;
-      border: 1px solid transparent;
-    }
-    .verdict-banner.flagged {
-      background: var(--red-light);
-      border-color: var(--red-mid);
-    }
-    .verdict-banner.clean {
-      background: var(--green-light);
-      border-color: var(--green-mid);
-    }
-    .verdict-dot {
-      width: 40px; height: 40px;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      font-size: 18px;
-    }
-    .flagged .verdict-dot { background: var(--red-mid); }
-    .clean   .verdict-dot { background: var(--green-mid); }
-    .verdict-label {
-      font-size: 20px;
-      font-weight: 600;
-      letter-spacing: -.3px;
-    }
-    .flagged .verdict-label { color: var(--red); }
-    .clean   .verdict-label { color: var(--green); }
-    .verdict-preview {
-      font-size: 13px;
-      color: var(--text-2);
-      margin-top: 2px;
-      font-style: italic;
-    }
-
-    /* Three-column grid for scores + rules + explanation */
-    .results-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-    .results-grid .span-2 {
-      grid-column: 1 / -1;
-    }
-
-    .card-title {
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .6px;
-      color: var(--text-3);
-      margin-bottom: 16px;
-    }
-
-    /* Detoxify scores */
-    .score-row {
-      margin-bottom: 11px;
-    }
-    .score-row:last-child { margin-bottom: 0; }
-    .score-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 5px;
-    }
-    .score-name {
-      font-size: 13px;
-      color: var(--text-2);
-      text-transform: capitalize;
-      font-weight: 400;
-    }
-    .score-name.primary { font-weight: 500; color: var(--text-1); }
-    .score-val {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 12px;
-      color: var(--text-2);
-    }
-    .score-val.high { color: var(--red); font-weight: 500; }
-    .score-bar-track {
-      height: 5px;
-      background: var(--border);
-      border-radius: 99px;
-      overflow: hidden;
-    }
-    .score-bar-fill {
-      height: 100%;
-      border-radius: 99px;
-      background: var(--blue);
-      transition: width .5s cubic-bezier(.4,0,.2,1);
-    }
-    .score-bar-fill.high { background: var(--red); }
-    .score-bar-fill.mid  { background: #f59e0b; }
-
-    /* Triggered rules */
-    .rules-empty {
-      font-size: 13px;
-      color: var(--text-3);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 0;
-    }
-    .rule-item {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 12px;
-      margin-bottom: 8px;
-      background: var(--bg);
-    }
-    .rule-item:last-child { margin-bottom: 0; }
-    .rule-name {
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--red);
-      background: var(--red-light);
-      border: 1px solid var(--red-mid);
-      border-radius: 4px;
-      padding: 2px 7px;
-      display: inline-block;
-      margin-bottom: 5px;
-    }
-    .rule-detail {
-      font-size: 12px;
-      color: var(--text-2);
-      line-height: 1.5;
-    }
-
-    /* Explanation */
-    .explanation-box {
-      background: var(--blue-light);
-      border: 1px solid var(--blue-mid);
-      border-radius: 8px;
-      padding: 16px;
-      font-size: 14px;
-      line-height: 1.7;
-      color: var(--text-1);
-    }
-    .explanation-box .attr {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--blue);
-      text-transform: uppercase;
-      letter-spacing: .5px;
-      margin-bottom: 10px;
-    }
-    .explanation-box .attr-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--blue);
-    }
-
-    /* Error state */
-    .error-box {
-      background: var(--red-light);
-      border: 1px solid var(--red-mid);
-      border-radius: 8px;
-      padding: 14px 16px;
-      font-size: 14px;
-      color: var(--red);
-      display: none;
-      margin-bottom: 16px;
-    }
-
-    @media (max-width: 600px) {
-      .results-grid { grid-template-columns: 1fr; }
-      .results-grid .span-2 { grid-column: 1; }
-      header { padding: 0 16px; }
-      .container { padding: 24px 16px 60px; }
-    }
-  </style>
-</head>
-<body>
-
-<header>
-  <div class="logo">
-    <div class="logo-icon">
-      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M8 1.5L13.5 4.5V11.5L8 14.5L2.5 11.5V4.5L8 1.5Z" stroke="white" stroke-width="1.4" stroke-linejoin="round"/>
-        <path d="M8 5.5V8.5M8 10V10.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
-    </div>
-    Fraud Review Dashboard
-  </div>
-  <span class="header-tag">CS 153 · Stanford</span>
-</header>
-
-<div class="container">
-  <div class="page-title">Content Analyzer</div>
-  <div class="page-sub">Paste a review, message, or transaction note to run it through the detection pipeline.</div>
-
-  <div class="card">
-    <div class="card-label">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="2" width="12" height="10" rx="2" stroke="#667085" stroke-width="1.3"/><path d="M4 5h6M4 7.5h4" stroke="#667085" stroke-width="1.3" stroke-linecap="round"/></svg>
-      Input Text
-    </div>
-    <textarea id="inputText" placeholder="e.g. 'THIS IS A FAKE PRODUCT click here for refund wire transfer...'"></textarea>
-    <div class="input-footer">
-      <span id="charCount">0 / 10,000</span>
-      <button id="analyzeBtn" onclick="analyze()">
-        <div class="spinner"></div>
-        <span class="btn-text">Analyze</span>
-      </button>
-    </div>
-  </div>
-
-  <div class="error-box" id="errorBox"></div>
-
-  <div id="results">
-    <div class="verdict-banner" id="verdictBanner">
-      <div class="verdict-dot" id="verdictDot"></div>
-      <div>
-        <div class="verdict-label" id="verdictLabel"></div>
-        <div class="verdict-preview" id="verdictPreview"></div>
-      </div>
-    </div>
-
-    <div class="results-grid">
-      <!-- Detoxify Scores -->
-      <div class="card">
-        <div class="card-title">Detoxify Scores</div>
-        <div id="scoresContainer"></div>
-      </div>
-
-      <!-- Triggered Rules -->
-      <div class="card">
-        <div class="card-title">Signal Rules</div>
-        <div id="rulesContainer"></div>
-      </div>
-
-      <!-- LLM Explanation — full width -->
-      <div class="card span-2">
-        <div class="card-title">Analyst Explanation</div>
-        <div class="explanation-box">
-          <div class="attr"><div class="attr-dot"></div>Generated by Claude</div>
-          <div id="explanationText"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-  const textarea = document.getElementById('inputText');
-  const charCount = document.getElementById('charCount');
-
-  textarea.addEventListener('input', () => {
-    const n = textarea.value.length;
-    charCount.textContent = `${n.toLocaleString()} / 10,000`;
-    charCount.style.color = n > 9000 ? 'var(--red)' : 'var(--text-3)';
-  });
-
-  async function analyze() {
-    const text = textarea.value.trim();
-    if (!text) { flashError('Please enter some text to analyze.'); return; }
-
-    const btn = document.getElementById('analyzeBtn');
-    const errorBox = document.getElementById('errorBox');
-    const results = document.getElementById('results');
-
-    btn.disabled = true;
-    btn.classList.add('loading');
-    errorBox.style.display = 'none';
-    results.style.display = 'none';
-
-    try {
-      const res = await fetch('/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `Server error ${res.status}`);
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sentinel — Fraud Review Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
 
-      const data = await res.json();
-      renderResults(data);
+      :root {
+        --bg: #0d0f12;
+        --surface: #13161b;
+        --surface-2: #1a1e25;
+        --surface-3: #21262f;
+        --border: #262c36;
+        --border-2: #2e3540;
+        --text-1: #eef0f3;
+        --text-2: #8b95a3;
+        --text-3: #4e5868;
+        --blue: #3b82f6;
+        --blue-dim: #1e3a5f;
+        --blue-glow: rgba(59, 130, 246, 0.15);
+        --green: #22c55e;
+        --green-dim: #14532d;
+        --green-glow: rgba(34, 197, 94, 0.12);
+        --red: #ef4444;
+        --red-dim: #450a0a;
+        --red-glow: rgba(239, 68, 68, 0.12);
+        --amber: #f59e0b;
+        --amber-dim: #451a03;
+        --amber-glow: rgba(245, 158, 11, 0.12);
+        --purple: #a78bfa;
+        --purple-dim: #2e1065;
+        --radius: 8px;
+        --radius-lg: 12px;
+      }
 
-    } catch (err) {
-      flashError(err.message || 'Something went wrong. Is the server running?');
-    } finally {
-      btn.disabled = false;
-      btn.classList.remove('loading');
-    }
-  }
+      body {
+        font-family: "DM Sans", sans-serif;
+        background: var(--bg);
+        color: var(--text-1);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
 
-  function renderResults(data) {
-    // Verdict banner
-    const banner = document.getElementById('verdictBanner');
-    const dot    = document.getElementById('verdictDot');
-    const label  = document.getElementById('verdictLabel');
-    const preview = document.getElementById('verdictPreview');
+      /* ── Sidebar + main layout ── */
+      .shell {
+        display: flex;
+        flex: 1;
+        min-height: 100vh;
+      }
 
-    const flagged = data.verdict === 'FLAGGED';
-    banner.className = `verdict-banner ${flagged ? 'flagged' : 'clean'}`;
-    dot.textContent  = flagged ? '⚠' : '✓';
-    label.textContent = data.verdict;
-    preview.textContent = `"${data.text_preview}"`;
+      /* ── Sidebar ── */
+      .sidebar {
+        width: 220px;
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        padding: 20px 0;
+        flex-shrink: 0;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+      }
+      .sidebar-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 18px 20px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 12px;
+      }
+      .logo-mark {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 700;
+        color: white;
+        flex-shrink: 0;
+      }
+      .logo-text {
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: -0.3px;
+        color: var(--text-1);
+      }
+      .logo-sub {
+        font-size: 10px;
+        color: var(--text-3);
+        font-family: "DM Mono", monospace;
+        letter-spacing: 0.5px;
+      }
 
-    // Detoxify scores
-    const scoresEl = document.getElementById('scoresContainer');
-    scoresEl.innerHTML = '';
-    const scoreOrder = ['toxicity','severe_toxicity','obscene','threat','insult','identity_attack'];
-    scoreOrder.forEach((key, i) => {
-      const val = data.detoxify_scores[key] ?? 0;
-      const pct = (val * 100).toFixed(1);
-      const isHigh = val > 0.5;
-      const isMid  = val > 0.2 && !isHigh;
-      const isPrimary = i === 0;
+      .nav-section {
+        padding: 0 10px;
+        margin-bottom: 4px;
+      }
+      .nav-label {
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--text-3);
+        padding: 8px 8px 4px;
+      }
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 8px 10px;
+        border-radius: var(--radius);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-2);
+        cursor: pointer;
+        transition: all 0.15s;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+      }
+      .nav-item:hover {
+        background: var(--surface-2);
+        color: var(--text-1);
+      }
+      .nav-item.active {
+        background: var(--blue-dim);
+        color: var(--blue);
+      }
+      .nav-item .icon {
+        font-size: 15px;
+        width: 18px;
+        text-align: center;
+      }
+      .nav-badge {
+        margin-left: auto;
+        background: var(--red);
+        color: white;
+        font-size: 10px;
+        font-weight: 700;
+        border-radius: 99px;
+        padding: 1px 6px;
+        font-family: "DM Mono", monospace;
+      }
 
-      scoresEl.innerHTML += `
-        <div class="score-row">
-          <div class="score-meta">
-            <span class="score-name ${isPrimary ? 'primary' : ''}">${key.replace(/_/g, ' ')}</span>
-            <span class="score-val ${isHigh ? 'high' : ''}">${pct}%</span>
+      .sidebar-footer {
+        margin-top: auto;
+        padding: 12px 10px 0;
+        border-top: 1px solid var(--border);
+      }
+
+      /* ── Main content ── */
+      .main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      /* ── Top bar ── */
+      .topbar {
+        height: 52px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        padding: 0 24px;
+        gap: 16px;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        flex-shrink: 0;
+      }
+      .topbar-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-1);
+      }
+      .topbar-sub {
+        font-size: 12px;
+        color: var(--text-3);
+        font-family: "DM Mono", monospace;
+      }
+      .topbar-right {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 6px var(--green);
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+      .status-label {
+        font-size: 11px;
+        color: var(--text-2);
+        font-family: "DM Mono", monospace;
+      }
+
+      /* ── Pages ── */
+      .page {
+        display: none;
+        flex: 1;
+      }
+      .page.active {
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* ── Metrics bar ── */
+      .metrics-bar {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+      }
+      .metric {
+        padding: 16px 20px;
+        border-right: 1px solid var(--border);
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .metric:last-child {
+        border-right: none;
+      }
+      .metric:hover {
+        background: var(--surface-2);
+      }
+      .metric-val {
+        font-size: 22px;
+        font-weight: 700;
+        font-family: "DM Mono", monospace;
+        color: var(--text-1);
+        line-height: 1;
+        margin-bottom: 4px;
+      }
+      .metric-val.red {
+        color: var(--red);
+      }
+      .metric-val.green {
+        color: var(--green);
+      }
+      .metric-val.amber {
+        color: var(--amber);
+      }
+      .metric-val.blue {
+        color: var(--blue);
+      }
+      .metric-label {
+        font-size: 11px;
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 500;
+      }
+      .metric-delta {
+        font-size: 11px;
+        color: var(--text-3);
+        font-family: "DM Mono", monospace;
+        margin-top: 2px;
+      }
+
+      /* ── Queue layout ── */
+      .queue-layout {
+        display: grid;
+        grid-template-columns: 1fr 420px;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .queue-list {
+        overflow-y: auto;
+        border-right: 1px solid var(--border);
+      }
+      .case-detail {
+        overflow-y: auto;
+        background: var(--surface);
+      }
+
+      /* ── Queue toolbar ── */
+      .queue-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .queue-count {
+        font-size: 12px;
+        color: var(--text-3);
+        font-family: "DM Mono", monospace;
+        white-space: nowrap;
+      }
+      .filter-pills {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .pill {
+        padding: 4px 12px;
+        border-radius: 99px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid var(--border-2);
+        background: transparent;
+        color: var(--text-3);
+        transition: all 0.15s;
+        font-family: "DM Mono", monospace;
+        letter-spacing: 0.3px;
+      }
+      .pill:hover {
+        color: var(--text-1);
+        border-color: var(--text-3);
+      }
+      .pill.active {
+        background: var(--surface-3);
+        color: var(--text-1);
+        border-color: var(--border-2);
+      }
+      .pill.p-high.active {
+        background: var(--red-dim);
+        color: var(--red);
+        border-color: var(--red);
+      }
+      .pill.p-med.active {
+        background: var(--amber-dim);
+        color: var(--amber);
+        border-color: var(--amber);
+      }
+      .pill.p-low.active {
+        background: var(--green-dim);
+        color: var(--green);
+        border-color: var(--green);
+      }
+      .pill.p-clean.active {
+        background: var(--blue-dim);
+        color: var(--blue);
+        border-color: var(--blue);
+      }
+      .ml-auto {
+        margin-left: auto;
+      }
+
+      /* ── Add case button ── */
+      .btn-add {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        background: var(--blue);
+        color: white;
+        border: none;
+        border-radius: var(--radius);
+        font-family: "DM Sans", sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+        white-space: nowrap;
+      }
+      .btn-add:hover {
+        background: #2563eb;
+      }
+
+      /* ── Case row ── */
+      .case-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .case-row:hover {
+        background: var(--surface-2);
+      }
+      .case-row.selected {
+        background: var(--surface-2);
+        border-left: 2px solid var(--blue);
+      }
+      .case-row.new-case {
+        animation: slideIn 0.3s ease;
+      }
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateX(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .severity-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .sev-high {
+        background: var(--red-dim);
+        color: var(--red);
+      }
+      .sev-medium {
+        background: var(--amber-dim);
+        color: var(--amber);
+      }
+      .sev-low {
+        background: var(--surface-3);
+        color: var(--text-2);
+      }
+      .sev-clean {
+        background: var(--green-dim);
+        color: var(--green);
+      }
+
+      .case-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .case-top {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+      }
+      .case-id {
+        font-family: "DM Mono", monospace;
+        font-size: 10px;
+        color: var(--text-3);
+      }
+
+      .sev-badge {
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 99px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-family: "DM Mono", monospace;
+      }
+      .sev-badge.high {
+        background: var(--red-dim);
+        color: var(--red);
+        border: 1px solid var(--red);
+      }
+      .sev-badge.medium {
+        background: var(--amber-dim);
+        color: var(--amber);
+        border: 1px solid var(--amber);
+      }
+      .sev-badge.low {
+        background: var(--surface-3);
+        color: var(--text-2);
+        border: 1px solid var(--border-2);
+      }
+      .sev-badge.clean {
+        background: var(--green-dim);
+        color: var(--green);
+        border: 1px solid var(--green);
+      }
+
+      .action-badge {
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 99px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-family: "DM Mono", monospace;
+      }
+      .action-badge.removed {
+        background: var(--red-dim);
+        color: var(--red);
+        border: 1px solid var(--red);
+      }
+      .action-badge.approved {
+        background: var(--green-dim);
+        color: var(--green);
+        border: 1px solid var(--green);
+      }
+      .action-badge.escalated {
+        background: var(--purple-dim);
+        color: var(--purple);
+        border: 1px solid var(--purple);
+      }
+      .action-badge.pending {
+        background: var(--surface-3);
+        color: var(--text-3);
+        border: 1px solid var(--border-2);
+      }
+
+      .case-text {
+        font-size: 13px;
+        color: var(--text-2);
+        line-height: 1.45;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .case-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 5px;
+      }
+      .case-rule-tag {
+        font-size: 10px;
+        color: var(--text-3);
+        background: var(--surface-3);
+        border-radius: 4px;
+        padding: 1px 6px;
+        font-family: "DM Mono", monospace;
+      }
+      .case-time {
+        font-size: 10px;
+        color: var(--text-3);
+        margin-left: auto;
+        font-family: "DM Mono", monospace;
+      }
+      .case-score {
+        font-size: 10px;
+        font-family: "DM Mono", monospace;
+      }
+      .case-score.high {
+        color: var(--red);
+      }
+      .case-score.med {
+        color: var(--amber);
+      }
+      .case-score.low {
+        color: var(--text-3);
+      }
+
+      .queue-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 20px;
+        gap: 10px;
+      }
+      .queue-empty-icon {
+        font-size: 32px;
+        opacity: 0.3;
+      }
+      .queue-empty-text {
+        font-size: 13px;
+        color: var(--text-3);
+      }
+
+      /* ── Case detail panel ── */
+      .detail-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        gap: 10px;
+        padding: 40px;
+      }
+      .detail-empty-icon {
+        font-size: 28px;
+        opacity: 0.2;
+      }
+      .detail-empty-text {
+        font-size: 13px;
+        color: var(--text-3);
+        text-align: center;
+      }
+
+      .detail-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        position: sticky;
+        top: 0;
+        background: var(--surface);
+        z-index: 5;
+      }
+      .detail-case-id {
+        font-family: "DM Mono", monospace;
+        font-size: 12px;
+        color: var(--text-3);
+      }
+      .detail-header-right {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .detail-body {
+        padding: 20px;
+      }
+      .detail-section {
+        margin-bottom: 20px;
+      }
+      .detail-section-title {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        color: var(--text-3);
+        margin-bottom: 10px;
+      }
+
+      .detail-text-box {
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 14px;
+        font-size: 13px;
+        line-height: 1.65;
+        color: var(--text-1);
+      }
+
+      .scores-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .score-card {
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 10px 12px;
+      }
+      .score-card-name {
+        font-size: 10px;
+        color: var(--text-3);
+        text-transform: capitalize;
+        margin-bottom: 4px;
+      }
+      .score-card-val {
+        font-size: 18px;
+        font-weight: 700;
+        font-family: "DM Mono", monospace;
+      }
+      .score-card-val.high {
+        color: var(--red);
+      }
+      .score-card-val.mid {
+        color: var(--amber);
+      }
+      .score-card-val.low {
+        color: var(--text-2);
+      }
+      .score-bar {
+        height: 3px;
+        background: var(--border);
+        border-radius: 99px;
+        margin-top: 6px;
+        overflow: hidden;
+      }
+      .score-bar-fill {
+        height: 100%;
+        border-radius: 99px;
+        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .score-bar-fill.high {
+        background: var(--red);
+      }
+      .score-bar-fill.mid {
+        background: var(--amber);
+      }
+      .score-bar-fill.low {
+        background: var(--blue);
+      }
+
+      .rules-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .rule-chip {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        background: var(--red-dim);
+        border: 1px solid rgba(239, 68, 68, 0.25);
+        border-radius: var(--radius);
+        padding: 10px 12px;
+      }
+      .rule-chip-name {
+        font-family: "DM Mono", monospace;
+        font-size: 10px;
+        font-weight: 500;
+        color: var(--red);
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .rule-chip-detail {
+        font-size: 12px;
+        color: var(--text-2);
+        line-height: 1.4;
+      }
+      .rules-empty-state {
+        font-size: 12px;
+        color: var(--text-3);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .explanation-card {
+        background: linear-gradient(135deg, #1e3a5f 0%, #1a1e25 100%);
+        border: 1px solid var(--blue-dim);
+        border-radius: var(--radius);
+        padding: 14px 16px;
+      }
+      .explanation-label {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--blue);
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .explanation-label::before {
+        content: "";
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--blue);
+        box-shadow: 0 0 6px var(--blue);
+        display: inline-block;
+      }
+      .explanation-text {
+        font-size: 13px;
+        color: var(--text-1);
+        line-height: 1.7;
+      }
+
+      /* ── Analyst actions ── */
+      .action-bar {
+        display: flex;
+        gap: 8px;
+        padding: 16px 20px;
+        border-top: 1px solid var(--border);
+        background: var(--surface);
+        position: sticky;
+        bottom: 0;
+      }
+      .action-btn {
+        flex: 1;
+        padding: 10px;
+        border-radius: var(--radius);
+        font-family: "DM Sans", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      .action-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .action-approve {
+        background: var(--green-dim);
+        color: var(--green);
+        border-color: rgba(34, 197, 94, 0.3);
+      }
+      .action-approve:hover:not(:disabled) {
+        background: rgba(34, 197, 94, 0.2);
+      }
+      .action-remove {
+        background: var(--red-dim);
+        color: var(--red);
+        border-color: rgba(239, 68, 68, 0.3);
+      }
+      .action-remove:hover:not(:disabled) {
+        background: rgba(239, 68, 68, 0.2);
+      }
+      .action-escalate {
+        background: var(--purple-dim);
+        color: var(--purple);
+        border-color: rgba(167, 139, 250, 0.3);
+      }
+      .action-escalate:hover:not(:disabled) {
+        background: rgba(167, 139, 250, 0.2);
+      }
+
+      .actioned-banner {
+        margin: 16px 20px 0;
+        padding: 10px 14px;
+        border-radius: var(--radius);
+        font-size: 12px;
+        font-weight: 500;
+        display: none;
+        align-items: center;
+        gap: 8px;
+      }
+      .actioned-banner.show {
+        display: flex;
+      }
+      .actioned-banner.approved {
+        background: var(--green-dim);
+        color: var(--green);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+      }
+      .actioned-banner.removed {
+        background: var(--red-dim);
+        color: var(--red);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+      }
+      .actioned-banner.escalated {
+        background: var(--purple-dim);
+        color: var(--purple);
+        border: 1px solid rgba(167, 139, 250, 0.3);
+      }
+
+      /* ── Submit panel ── */
+      .submit-panel {
+        padding: 20px;
+      }
+      .submit-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+      .submit-title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .submit-sub {
+        font-size: 12px;
+        color: var(--text-3);
+        margin-bottom: 16px;
+      }
+      textarea {
+        width: 100%;
+        background: var(--surface-2);
+        border: 1px solid var(--border-2);
+        border-radius: var(--radius);
+        padding: 12px 14px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 13px;
+        color: var(--text-1);
+        resize: vertical;
+        outline: none;
+        min-height: 100px;
+        transition: border-color 0.15s;
+      }
+      textarea:focus {
+        border-color: var(--blue);
+      }
+      textarea::placeholder {
+        color: var(--text-3);
+      }
+      .submit-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 12px;
+      }
+      .char-count {
+        font-size: 11px;
+        color: var(--text-3);
+        font-family: "DM Mono", monospace;
+      }
+
+      .btn-submit {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 20px;
+        background: var(--blue);
+        color: white;
+        border: none;
+        border-radius: var(--radius);
+        font-family: "DM Sans", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .btn-submit:hover:not(:disabled) {
+        background: #2563eb;
+      }
+      .btn-submit:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .spinner {
+        width: 13px;
+        height: 13px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        display: none;
+      }
+      .btn-submit.loading .spinner {
+        display: block;
+      }
+      .btn-submit.loading .btn-text {
+        opacity: 0.7;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .error-msg {
+        background: var(--red-dim);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        border-radius: var(--radius);
+        padding: 10px 14px;
+        font-size: 12px;
+        color: var(--red);
+        display: none;
+        margin-top: 10px;
+      }
+
+      /* ── Batch page ── */
+      .batch-page-layout {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .batch-input-panel {
+        padding: 24px;
+        overflow-y: auto;
+        border-right: 1px solid var(--border);
+      }
+      .batch-results-panel {
+        overflow-y: auto;
+      }
+      .batch-toolbar {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .batch-summary-strip {
+        display: flex;
+        gap: 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .bstat {
+        flex: 1;
+        padding: 12px 14px;
+        border-right: 1px solid var(--border);
+      }
+      .bstat:last-child {
+        border-right: none;
+      }
+      .bstat-val {
+        font-size: 18px;
+        font-weight: 700;
+        font-family: "DM Mono", monospace;
+      }
+      .bstat-val.red {
+        color: var(--red);
+      }
+      .bstat-val.green {
+        color: var(--green);
+      }
+      .bstat-val.blue {
+        color: var(--blue);
+      }
+      .bstat-label {
+        font-size: 10px;
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-top: 2px;
+      }
+      .batch-result-row {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .batch-result-row:hover {
+        background: var(--surface-2);
+      }
+      .batch-result-row.high-sev {
+        border-left: 2px solid var(--red);
+      }
+      .batch-result-row.med-sev {
+        border-left: 2px solid var(--amber);
+      }
+      .batch-result-row.clean-sev {
+        border-left: 2px solid var(--green);
+      }
+      .batch-row-top {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+      }
+      .batch-row-text {
+        font-size: 12px;
+        color: var(--text-2);
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .batch-row-tags {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        margin-top: 5px;
+      }
+      .mini-tag {
+        font-size: 9px;
+        font-family: "DM Mono", monospace;
+        padding: 1px 5px;
+        border-radius: 3px;
+      }
+      .mini-tag.rule {
+        background: var(--red-dim);
+        color: var(--red);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+      }
+      .mini-tag.tox {
+        background: var(--surface-3);
+        color: var(--text-3);
+      }
+
+      /* ── Loading overlay ── */
+      .analyzing-badge {
+        display: none;
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 12px 16px;
+        display: none;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: var(--text-2);
+        z-index: 100;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      }
+      .analyzing-badge.show {
+        display: flex;
+        animation: fadeUp 0.2s ease;
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      ::-webkit-scrollbar {
+        width: 5px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border-2);
+        border-radius: 99px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <!-- ── Sidebar ── -->
+      <aside class="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-mark">S</div>
+          <div>
+            <div class="logo-text">Sentinel</div>
+            <div class="logo-sub">CS 153 · STANFORD</div>
           </div>
-          <div class="score-bar-track">
-            <div class="score-bar-fill ${isHigh ? 'high' : isMid ? 'mid' : ''}"
-                 style="width: 0%"
-                 data-target="${pct}"></div>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-label">Operations</div>
+          <button class="nav-item active" onclick="showPage('queue', this)">
+            <span class="icon">⚡</span> Review Queue
+            <span class="nav-badge" id="queueBadge">0</span>
+          </button>
+          <button class="nav-item" onclick="showPage('submit', this)">
+            <span class="icon">＋</span> Submit Case
+          </button>
+          <button class="nav-item" onclick="showPage('batch', this)">
+            <span class="icon">≡</span> Batch Analyze
+          </button>
+        </div>
+
+        <div class="nav-section" style="margin-top: 8px">
+          <div class="nav-label">System</div>
+          <div class="nav-item" style="cursor: default">
+            <span class="icon">📊</span>
+            <span style="color: var(--text-3)">Analytics</span>
+          </div>
+          <div class="nav-item" style="cursor: default">
+            <span class="icon">📋</span>
+            <span style="color: var(--text-3)">Policies</span>
+          </div>
+        </div>
+
+        <div class="sidebar-footer">
+          <div style="font-size: 11px; color: var(--text-3); padding: 4px 8px">
+            Powered by Detoxify + Claude
+          </div>
+        </div>
+      </aside>
+
+      <!-- ── Main ── -->
+      <div class="main">
+        <!-- Topbar -->
+        <div class="topbar">
+          <div>
+            <div class="topbar-title" id="topbarTitle">Review Queue</div>
+          </div>
+          <div class="topbar-right">
+            <div class="status-dot"></div>
+            <span class="status-label">LIVE</span>
+          </div>
+        </div>
+
+        <!-- ══ PAGE: Queue ══ -->
+        <div class="page active" id="page-queue">
+          <!-- Metrics -->
+          <div class="metrics-bar">
+            <div class="metric">
+              <div class="metric-val" id="m-total">0</div>
+              <div class="metric-label">Total Cases</div>
+            </div>
+            <div class="metric">
+              <div class="metric-val red" id="m-high">0</div>
+              <div class="metric-label">High Severity</div>
+            </div>
+            <div class="metric">
+              <div class="metric-val amber" id="m-medium">0</div>
+              <div class="metric-label">Medium</div>
+            </div>
+            <div class="metric">
+              <div class="metric-val green" id="m-reviewed">0</div>
+              <div class="metric-label">Reviewed</div>
+            </div>
+            <div class="metric">
+              <div class="metric-val blue" id="m-flagrate">0%</div>
+              <div class="metric-label">Flag Rate</div>
+            </div>
+          </div>
+
+          <div class="queue-layout">
+            <!-- Queue list -->
+            <div class="queue-list">
+              <div class="queue-toolbar">
+                <span class="queue-count" id="queueCountLabel">0 cases</span>
+                <div class="filter-pills">
+                  <button
+                    class="pill active"
+                    onclick="setQueueFilter('all', this)"
+                  >
+                    All
+                  </button>
+                  <button
+                    class="pill p-high"
+                    onclick="setQueueFilter('high', this)"
+                  >
+                    High
+                  </button>
+                  <button
+                    class="pill p-med"
+                    onclick="setQueueFilter('medium', this)"
+                  >
+                    Medium
+                  </button>
+                  <button
+                    class="pill p-low"
+                    onclick="setQueueFilter('low', this)"
+                  >
+                    Low
+                  </button>
+                  <button
+                    class="pill p-clean"
+                    onclick="setQueueFilter('clean', this)"
+                  >
+                    Clean
+                  </button>
+                </div>
+                <button
+                  class="btn-add ml-auto"
+                  onclick="
+                    showPage(
+                      'submit',
+                      document.querySelector('.nav-item:nth-child(2)'),
+                    )
+                  "
+                >
+                  + New Case
+                </button>
+              </div>
+              <div id="queueList">
+                <div class="queue-empty">
+                  <div class="queue-empty-icon">📭</div>
+                  <div class="queue-empty-text">
+                    No cases yet. Submit one to get started.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Case detail -->
+            <div class="case-detail" id="caseDetail">
+              <div class="detail-empty">
+                <div class="detail-empty-icon">←</div>
+                <div class="detail-empty-text">
+                  Select a case from the queue<br />to view details.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ PAGE: Submit ══ -->
+        <div class="page" id="page-submit">
+          <div class="submit-panel">
+            <div class="submit-card">
+              <div class="submit-title">Submit New Case</div>
+              <div class="submit-sub">
+                Paste content for analysis. Results will appear in the Review
+                Queue.
+              </div>
+              <textarea
+                id="submitText"
+                placeholder="Paste a review, message, transaction note, or any text to analyze..."
+              ></textarea>
+              <div class="submit-footer">
+                <span class="char-count" id="submitCharCount">0 / 10,000</span>
+                <button
+                  class="btn-submit"
+                  id="submitBtn"
+                  onclick="submitCase()"
+                >
+                  <div class="spinner"></div>
+                  <span class="btn-text">→ Analyze &amp; Queue</span>
+                </button>
+              </div>
+              <div class="error-msg" id="submitError"></div>
+            </div>
+
+            <!-- Quick test cases -->
+            <div class="submit-card">
+              <div
+                class="submit-title"
+                style="
+                  font-size: 12px;
+                  color: var(--text-3);
+                  margin-bottom: 10px;
+                "
+              >
+                QUICK TEST CASES
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <div
+                  class="quick-case"
+                  onclick="loadQuick(this)"
+                  data-text="THIS PRODUCT IS ABSOLUTELY FAKE AND A TOTAL SCAM. Click here for your refund wire transfer NOW!!"
+                  style="
+                    padding: 10px 12px;
+                    background: var(--surface-2);
+                    border: 1px solid var(--border);
+                    border-radius: var(--radius);
+                    font-size: 12px;
+                    color: var(--text-2);
+                    cursor: pointer;
+                    transition: background 0.15s;
+                  "
+                >
+                  ⚠ High severity — caps + keywords + short suspicious
+                </div>
+                <div
+                  class="quick-case"
+                  onclick="loadQuick(this)"
+                  data-text="Click here for your free money guaranteed wire transfer refund. Act now limited time offer!"
+                  style="
+                    padding: 10px 12px;
+                    background: var(--surface-2);
+                    border: 1px solid var(--border);
+                    border-radius: var(--radius);
+                    font-size: 12px;
+                    color: var(--text-2);
+                    cursor: pointer;
+                    transition: background 0.15s;
+                  "
+                >
+                  ⚡ Medium — fraud keywords, low toxicity
+                </div>
+                <div
+                  class="quick-case"
+                  onclick="loadQuick(this)"
+                  data-text="You are absolutely terrible and I hate everything about you. Get out."
+                  style="
+                    padding: 10px 12px;
+                    background: var(--surface-2);
+                    border: 1px solid var(--border);
+                    border-radius: var(--radius);
+                    font-size: 12px;
+                    color: var(--text-2);
+                    cursor: pointer;
+                    transition: background 0.15s;
+                  "
+                >
+                  🔴 High toxicity — pure detoxify catch, no rules
+                </div>
+                <div
+                  class="quick-case"
+                  onclick="loadQuick(this)"
+                  data-text="Excellent product, arrived on time and exactly as described. Very happy with this purchase!"
+                  style="
+                    padding: 10px 12px;
+                    background: var(--surface-2);
+                    border: 1px solid var(--border);
+                    border-radius: var(--radius);
+                    font-size: 12px;
+                    color: var(--text-2);
+                    cursor: pointer;
+                    transition: background 0.15s;
+                  "
+                >
+                  ✓ Clean — should pass all checks
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ PAGE: Batch ══ -->
+        <div class="page" id="page-batch">
+          <div class="batch-page-layout">
+            <div class="batch-input-panel">
+              <div class="submit-card">
+                <div class="submit-title">Batch Analyzer</div>
+                <div class="submit-sub">
+                  One text per line. Up to 20 at once. Scores + rules, no LLM
+                  calls.
+                </div>
+                <textarea
+                  id="batchText"
+                  style="min-height: 160px"
+                  placeholder="Click here for free money&#10;THIS IS FAKE&#10;Great product, very happy"
+                ></textarea>
+                <div class="submit-footer">
+                  <span class="char-count" id="batchLineCount">0 lines</span>
+                  <button class="btn-submit" id="batchBtn" onclick="runBatch()">
+                    <div class="spinner"></div>
+                    <span class="btn-text">Run Batch</span>
+                  </button>
+                </div>
+                <div class="error-msg" id="batchError"></div>
+              </div>
+            </div>
+
+            <div class="batch-results-panel">
+              <div class="batch-toolbar">
+                <span
+                  style="
+                    font-size: 12px;
+                    color: var(--text-3);
+                    font-family: &quot;DM Mono&quot;, monospace;
+                  "
+                  id="batchResultCount"
+                  >No results yet</span
+                >
+                <div style="margin-left: auto; display: flex; gap: 6px">
+                  <button
+                    class="pill active"
+                    onclick="setBatchFilter('all', this)"
+                  >
+                    All
+                  </button>
+                  <button
+                    class="pill p-high"
+                    onclick="setBatchFilter('FLAGGED', this)"
+                  >
+                    Flagged
+                  </button>
+                  <button
+                    class="pill p-clean"
+                    onclick="setBatchFilter('CLEAN', this)"
+                  >
+                    Clean
+                  </button>
+                </div>
+              </div>
+              <div
+                id="batchSummaryStrip"
+                style="display: none"
+                class="batch-summary-strip"
+              >
+                <div class="bstat">
+                  <div class="bstat-val" id="bs-total">0</div>
+                  <div class="bstat-label">Total</div>
+                </div>
+                <div class="bstat">
+                  <div class="bstat-val red" id="bs-flagged">0</div>
+                  <div class="bstat-label">Flagged</div>
+                </div>
+                <div class="bstat">
+                  <div class="bstat-val green" id="bs-clean">0</div>
+                  <div class="bstat-label">Clean</div>
+                </div>
+                <div class="bstat">
+                  <div class="bstat-val blue" id="bs-rate">0%</div>
+                  <div class="bstat-label">Flag rate</div>
+                </div>
+              </div>
+              <div id="batchResultList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- /main -->
+    </div>
+    <!-- /shell -->
+
+    <!-- Analyzing toast -->
+    <div class="analyzing-badge" id="analyzingBadge">
+      <div
+        class="spinner"
+        style="
+          display: block;
+          border-top-color: var(--blue);
+          border-color: var(--border-2);
+        "
+      ></div>
+      Analyzing with Detoxify + Claude...
+    </div>
+
+    <script>
+      // ══ State ══
+      let cases = []; // all submitted cases
+      let selectedId = null;
+      let queueFilter = "all";
+      let batchAllData = [];
+      let batchFilter = "all";
+
+      // ══ Severity from scores + rules ══
+      function getSeverity(data) {
+        const tox = data.detoxify_scores.toxicity;
+        const ruleCount = data.triggered_rules.length;
+        if (data.verdict === "CLEAN") return "clean";
+        if (tox > 0.7 || (tox > 0.4 && ruleCount >= 2) || ruleCount >= 3)
+          return "high";
+        if (tox > 0.4 || ruleCount >= 1) return "medium";
+        return "low";
+      }
+
+      const SEV_ICONS = { high: "🔴", medium: "🟡", low: "⚪", clean: "🟢" };
+
+      // ══ Page navigation ══
+      function showPage(name, btn) {
+        document
+          .querySelectorAll(".page")
+          .forEach((p) => p.classList.remove("active"));
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((n) => n.classList.remove("active"));
+        document.getElementById("page-" + name).classList.add("active");
+        if (btn) btn.classList.add("active");
+        const titles = {
+          queue: "Review Queue",
+          submit: "Submit Case",
+          batch: "Batch Analyzer",
+        };
+        document.getElementById("topbarTitle").textContent =
+          titles[name] || name;
+      }
+
+      // ══ Submit single case ══
+      async function submitCase() {
+        const text = document.getElementById("submitText").value.trim();
+        if (!text) {
+          showErr("submitError", "Enter some text first.");
+          return;
+        }
+
+        const btn = document.getElementById("submitBtn");
+        setLoading(btn, true);
+        document.getElementById("submitError").style.display = "none";
+        document.getElementById("analyzingBadge").classList.add("show");
+
+        try {
+          const res = await fetch("/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text }),
+          });
+          if (!res.ok) {
+            const e = await res.json().catch(() => {});
+            throw new Error(e?.detail || `Error ${res.status}`);
+          }
+          const data = await res.json();
+
+          const c = {
+            id: "CASE-" + String(cases.length + 1).padStart(4, "0"),
+            ...data,
+            severity: getSeverity(data),
+            action: "pending",
+            ts: new Date(),
+          };
+          cases.unshift(c);
+          updateMetrics();
+          renderQueue();
+          document.getElementById("submitText").value = "";
+          document.getElementById("submitCharCount").textContent = "0 / 10,000";
+
+          // Switch to queue and select new case
+          showPage("queue", document.querySelector(".nav-item"));
+          setTimeout(() => selectCase(c.id), 100);
+        } catch (e) {
+          showErr("submitError", e.message);
+        } finally {
+          setLoading(btn, false);
+          document.getElementById("analyzingBadge").classList.remove("show");
+        }
+      }
+
+      // ══ Quick test loader ══
+      function loadQuick(el) {
+        showPage("submit", document.querySelectorAll(".nav-item")[1]);
+        document.getElementById("submitText").value = el.dataset.text;
+        document.getElementById("submitCharCount").textContent =
+          el.dataset.text.length + " / 10,000";
+      }
+
+      // ══ Queue rendering ══
+      function renderQueue() {
+        const filtered =
+          queueFilter === "all"
+            ? cases
+            : cases.filter((c) => c.severity === queueFilter);
+
+        document.getElementById("queueCountLabel").textContent =
+          filtered.length + " case" + (filtered.length !== 1 ? "s" : "");
+        document.getElementById("queueBadge").textContent = cases.filter(
+          (c) => c.action === "pending",
+        ).length;
+
+        const el = document.getElementById("queueList");
+        if (!filtered.length) {
+          el.innerHTML = `<div class="queue-empty"><div class="queue-empty-icon">📭</div><div class="queue-empty-text">${cases.length ? "No cases match this filter." : "No cases yet. Submit one to get started."}</div></div>`;
+          return;
+        }
+
+        el.innerHTML = filtered
+          .map((c) => {
+            const tox = (c.detoxify_scores.toxicity * 100).toFixed(0);
+            const toxClass =
+              c.detoxify_scores.toxicity > 0.5
+                ? "high"
+                : c.detoxify_scores.toxicity > 0.2
+                  ? "med"
+                  : "low";
+            const topRule = c.triggered_rules[0];
+            const time = c.ts.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+            return `
+        <div class="case-row ${c.id === selectedId ? "selected" : ""}" onclick="selectCase('${c.id}')">
+          <div class="severity-icon sev-${c.severity}">${SEV_ICONS[c.severity]}</div>
+          <div class="case-body">
+            <div class="case-top">
+              <span class="case-id">${c.id}</span>
+              <span class="sev-badge ${c.severity}">${c.severity.toUpperCase()}</span>
+              ${c.action !== "pending" ? `<span class="action-badge ${c.action}">${c.action.toUpperCase()}</span>` : ""}
+            </div>
+            <div class="case-text">${esc(c.text_preview)}</div>
+            <div class="case-meta">
+              ${topRule ? `<span class="case-rule-tag">${topRule.rule}</span>` : ""}
+              ${c.triggered_rules.length > 1 ? `<span class="case-rule-tag">+${c.triggered_rules.length - 1} more</span>` : ""}
+              <span class="case-score ${toxClass}">tox ${tox}%</span>
+              <span class="case-time">${time}</span>
+            </div>
           </div>
         </div>`;
-    });
+          })
+          .join("");
+      }
 
-    // Animate bars after paint
-    requestAnimationFrame(() => {
-      document.querySelectorAll('.score-bar-fill').forEach(bar => {
-        bar.style.width = bar.dataset.target + '%';
+      function setQueueFilter(filter, btn) {
+        queueFilter = filter;
+        document
+          .querySelectorAll(".filter-pills .pill")
+          .forEach((p) => p.classList.remove("active"));
+        btn.classList.add("active");
+        renderQueue();
+      }
+
+      // ══ Case detail ══
+      function selectCase(id) {
+        selectedId = id;
+        const c = cases.find((x) => x.id === id);
+        renderQueue(); // re-render to update selected highlight
+
+        const scoreOrder = [
+          "toxicity",
+          "severe_toxicity",
+          "obscene",
+          "threat",
+          "insult",
+          "identity_attack",
+        ];
+        const scoresHTML = scoreOrder
+          .map((key) => {
+            const val = c.detoxify_scores[key] ?? 0;
+            const pct = (val * 100).toFixed(1);
+            const cls = val > 0.5 ? "high" : val > 0.2 ? "mid" : "low";
+            return `
+        <div class="score-card">
+          <div class="score-card-name">${key.replace(/_/g, " ")}</div>
+          <div class="score-card-val ${cls}">${pct}%</div>
+          <div class="score-bar"><div class="score-bar-fill ${cls}" style="width:0%" data-target="${pct}"></div></div>
+        </div>`;
+          })
+          .join("");
+
+        const rulesHTML =
+          c.triggered_rules.length === 0
+            ? '<div class="rules-empty-state">✓ No signal rules triggered</div>'
+            : c.triggered_rules
+                .map(
+                  (r) => `
+          <div class="rule-chip">
+            <span class="rule-chip-name">${r.rule}</span>
+            <span class="rule-chip-detail">${r.detail}</span>
+          </div>`,
+                )
+                .join("");
+
+        const actionedBanner =
+          c.action !== "pending"
+            ? `
+      <div class="actioned-banner show ${c.action}">
+        ${{ approved: "✓ Approved — marked as clean", removed: "✗ Removed — content taken down", escalated: "↑ Escalated — sent for senior review" }[c.action]}
+      </div>`
+            : "";
+
+        document.getElementById("caseDetail").innerHTML = `
+      ${actionedBanner}
+      <div class="detail-header">
+        <span class="sev-badge ${c.severity}">${c.severity.toUpperCase()}</span>
+        <span class="detail-case-id">${c.id}</span>
+        <span class="detail-case-id" style="color:var(--text-3)">${c.ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+        <div class="detail-header-right">
+          ${c.action !== "pending" ? `<span class="action-badge ${c.action}">${c.action.toUpperCase()}</span>` : ""}
+        </div>
+      </div>
+
+      <div class="detail-body">
+        <div class="detail-section">
+          <div class="detail-section-title">Submitted Text</div>
+          <div class="detail-text-box">${esc(c.text_preview)}</div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-title">Detoxify Scores</div>
+          <div class="scores-grid">${scoresHTML}</div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-title">Signal Rules</div>
+          <div class="rules-list">${rulesHTML}</div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-title">Analyst Explanation</div>
+          <div class="explanation-card">
+            <div class="explanation-label">Generated by Claude</div>
+            <div class="explanation-text">${esc(c.explanation)}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button class="action-btn action-approve" onclick="takeAction('${c.id}','approved')"  >✓ Approve</button>
+        <button class="action-btn action-remove"  onclick="takeAction('${c.id}','removed')"   >✗ Remove</button>
+        <button class="action-btn action-escalate" onclick="takeAction('${c.id}','escalated')" >↑ Escalate</button>
+      </div>`;
+
+        requestAnimationFrame(() => {
+          document
+            .querySelectorAll(".score-bar-fill")
+            .forEach((b) => (b.style.width = b.dataset.target + "%"));
+        });
+      }
+
+      function takeAction(id, action) {
+        const c = cases.find((x) => x.id === id);
+        if (!c) return;
+        c.action = action;
+        updateMetrics();
+        selectCase(id);
+        renderQueue();
+      }
+
+      // ══ Metrics ══
+      function updateMetrics() {
+        const total = cases.length;
+        const high = cases.filter((c) => c.severity === "high").length;
+        const medium = cases.filter((c) => c.severity === "medium").length;
+        const reviewed = cases.filter((c) => c.action !== "pending").length;
+        const flagged = cases.filter((c) => c.verdict === "FLAGGED").length;
+        document.getElementById("m-total").textContent = total;
+        document.getElementById("m-high").textContent = high;
+        document.getElementById("m-medium").textContent = medium;
+        document.getElementById("m-reviewed").textContent = reviewed;
+        document.getElementById("m-flagrate").textContent = total
+          ? Math.round((flagged / total) * 100) + "%"
+          : "0%";
+      }
+
+      // ══ Batch ══
+      async function runBatch() {
+        const texts = document
+          .getElementById("batchText")
+          .value.split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean);
+        if (!texts.length) {
+          showErr("batchError", "Enter at least one line.");
+          return;
+        }
+        if (texts.length > 20) {
+          showErr("batchError", "Max 20 lines.");
+          return;
+        }
+
+        const btn = document.getElementById("batchBtn");
+        setLoading(btn, true);
+        document.getElementById("batchError").style.display = "none";
+
+        try {
+          const res = await fetch("/analyze/batch", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ texts }),
+          });
+          if (!res.ok) {
+            const e = await res.json().catch(() => {});
+            throw new Error(e?.detail || `Error ${res.status}`);
+          }
+          const data = await res.json();
+          batchAllData = data.results;
+          renderBatch(data);
+        } catch (e) {
+          showErr("batchError", e.message);
+        } finally {
+          setLoading(btn, false);
+        }
+      }
+
+      function renderBatch(data) {
+        const strip = document.getElementById("batchSummaryStrip");
+        strip.style.display = "flex";
+        document.getElementById("bs-total").textContent = data.total;
+        document.getElementById("bs-flagged").textContent = data.flagged_count;
+        document.getElementById("bs-clean").textContent =
+          data.total - data.flagged_count;
+        document.getElementById("bs-rate").textContent = data.total
+          ? Math.round((data.flagged_count / data.total) * 100) + "%"
+          : "0%";
+        renderBatchList();
+      }
+
+      function renderBatchList() {
+        const items =
+          batchFilter === "all"
+            ? batchAllData
+            : batchAllData.filter((r) => r.verdict === batchFilter);
+        document.getElementById("batchResultCount").textContent =
+          items.length + " result" + (items.length !== 1 ? "s" : "");
+        const el = document.getElementById("batchResultList");
+        if (!items.length) {
+          el.innerHTML =
+            '<div class="queue-empty"><div class="queue-empty-text">No items match.</div></div>';
+          return;
+        }
+        el.innerHTML = items
+          .map((r) => {
+            const sev = getSeverity(r);
+            const tox = (r.detoxify_scores.toxicity * 100).toFixed(0);
+            const tags =
+              r.triggered_rules
+                .map((ru) => `<span class="mini-tag rule">${ru.rule}</span>`)
+                .join("") + `<span class="mini-tag tox">tox ${tox}%</span>`;
+            return `
+        <div class="batch-result-row ${sev === "high" ? "high-sev" : sev === "medium" ? "med-sev" : sev === "clean" ? "clean-sev" : ""}">
+          <div class="batch-row-top">
+            <span class="sev-badge ${sev}">${sev.toUpperCase()}</span>
+          </div>
+          <div class="batch-row-text">${esc(r.text_preview)}</div>
+          <div class="batch-row-tags">${tags}</div>
+        </div>`;
+          })
+          .join("");
+      }
+
+      function setBatchFilter(filter, btn) {
+        batchFilter = filter;
+        document
+          .querySelectorAll("#page-batch .pill")
+          .forEach((p) => p.classList.remove("active"));
+        btn.classList.add("active");
+        renderBatchList();
+      }
+
+      // ══ Utils ══
+      function setLoading(btn, on) {
+        btn.disabled = on;
+        btn.classList.toggle("loading", on);
+      }
+      function showErr(id, msg) {
+        const e = document.getElementById(id);
+        e.textContent = msg;
+        e.style.display = "block";
+      }
+      function esc(str) {
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      document
+        .getElementById("submitText")
+        .addEventListener("input", function () {
+          document.getElementById("submitCharCount").textContent =
+            this.value.length + " / 10,000";
+        });
+      document
+        .getElementById("batchText")
+        .addEventListener("input", function () {
+          const n = this.value.split("\n").filter((l) => l.trim()).length;
+          document.getElementById("batchLineCount").textContent =
+            n + " line" + (n !== 1 ? "s" : "");
+        });
+      document.querySelectorAll(".quick-case").forEach((el) => {
+        el.addEventListener(
+          "mouseenter",
+          () => (el.style.background = "var(--surface-3)"),
+        );
+        el.addEventListener(
+          "mouseleave",
+          () => (el.style.background = "var(--surface-2)"),
+        );
       });
-    });
 
-    // Triggered rules
-    const rulesEl = document.getElementById('rulesContainer');
-    rulesEl.innerHTML = '';
-    if (data.triggered_rules.length === 0) {
-      rulesEl.innerHTML = '<div class="rules-empty">✓ No rules triggered</div>';
-    } else {
-      data.triggered_rules.forEach(r => {
-        rulesEl.innerHTML += `
-          <div class="rule-item">
-            <div class="rule-name">${r.rule}</div>
-            <div class="rule-detail">${r.detail}</div>
-          </div>`;
-      });
-    }
-
-    // Explanation
-    document.getElementById('explanationText').textContent = data.explanation;
-
-    // Show results
-    const resultsEl = document.getElementById('results');
-    resultsEl.style.display = 'block';
-    resultsEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
-
-  function flashError(msg) {
-    const box = document.getElementById('errorBox');
-    box.textContent = msg;
-    box.style.display = 'block';
-  }
-
-  // Allow Cmd+Enter / Ctrl+Enter to submit
-  textarea.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) analyze();
-  });
-</script>
-</body>
+      updateMetrics();
+    </script>
+  </body>
 </html>
