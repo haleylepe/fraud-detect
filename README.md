@@ -223,20 +223,7 @@ The jailbreak failures cannot be fixed by Claude because Claude only runs after 
 
 ---
 
-## Signal Rules
-
-| Rule                    | What it catches                                           | Informed by                                   |
-| ----------------------- | --------------------------------------------------------- | --------------------------------------------- |
-| `KEYWORD_FLAG`          | Bad words + fraud terms (free money, wire transfer, etc.) | hughsie/badwords + custom list                |
-| `EXCESSIVE_CAPS`        | >40% uppercase letters                                    | Spam/aggression signal                        |
-| `SHORT_SUSPICIOUS`      | <15 words with toxicity >0.3                              | Combined signal                               |
-| `REPEATED_CHARS`        | Any character repeated 4+ times                           | Spam signal                                   |
-| `URL_DETECTED`          | Contains a hyperlink                                      | Phishing/spam                                 |
-| `PERSONAL_INFO_REQUEST` | Requests SSN, passwords, bank details                     | WildChat: PII/Privacy (1,046 cases)           |
-| `THREAT_LANGUAGE`       | "I will kill you", "watch your back"                      | WildChat: Violence/Threat (2,240 cases)       |
-| `SUBSTANCE_REFERENCE`   | Drug use methods, illicit substances                      | WildChat: Controlled Substances (1,257 cases) |
-| `EXCESSIVE_PUNCTUATION` | 3+ consecutive ! or ?                                     | WildChat: Harassment/Fraud                    |
-| `SELF_HARM_REFERENCE`   | Suicidal ideation, self-harm language                     | WildChat: Suicide/Self Harm (758 cases)       |
+## AI Usage Disclosure 
 
 ---
 
