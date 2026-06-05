@@ -1,22 +1,27 @@
 """
 evaluate.py — Evaluation script for the Fraud Review Dashboard.
 
-Runs the detection pipeline (Detoxify + rules, NO LLM calls) against two
-labeled datasets and prints precision, recall, F1, confusion matrices, and
-a cross-domain comparison table.
+Runs the detection pipeline (Detoxify + rules, NO LLM calls) against labeled
+datasets and prints precision, recall, F1, confusion matrices, and a
+cross-domain comparison table.
 
 Usage:
-    # First time only — download and sample the datasets:
+    # First time only — prepare the datasets:
     python data/prepare_data.py
 
-    # Then run evaluation:
+    # Standard evaluation (Jigsaw + Toxic Chat):
     python evaluate.py
+
+    # Extended evaluation including WildChat:
+    python evaluate.py --wildchat
 
 Datasets:
     data/jigsaw_sample.csv    — columns: comment_text, toxic (0/1)
     data/toxicchat_sample.csv — columns: user_input, toxicity (0/1)
+    data/wildchat_sample.csv  — columns: comment_text, toxic (0/1)  [optional]
 """
 
+import os
 import sys
 import pandas as pd
 from detoxify import Detoxify
@@ -36,7 +41,7 @@ DETOXIFY_THRESHOLD = 0.5   # flag if detoxify toxicity score exceeds this
 DATA_DIR = "data"
 
 # ---------------------------------------------------------------------------
-# Model — loaded once
+# Model — loaded once at import time
 # ---------------------------------------------------------------------------
 
 print("Loading Detoxify model...")
@@ -76,7 +81,7 @@ def evaluate_dataset(
     """
     Run predictions on an entire dataframe and print metrics.
 
-    Returns a dict with keys: precision, recall, f1, dataset_name.
+    Returns a dict with keys: dataset_name, n, precision, recall, f1, tp, tn, fp, fn.
     """
     print(f"{'='*60}")
     print(f"  Dataset: {dataset_name}  ({len(df)} rows)")
@@ -164,18 +169,19 @@ def print_comparison(results: list[dict]):
         )
     print()
 
-    # Key finding
-    if len(results) == 2:
-        r1, r2 = results
-        delta = abs(r1["f1"] - r2["f1"])
-        higher = r1 if r1["f1"] > r2["f1"] else r2
-        lower  = r2 if r1["f1"] > r2["f1"] else r1
+    if len(results) >= 2:
+        sorted_r = sorted(results, key=lambda x: x["f1"], reverse=True)
+        higher, lower = sorted_r[0], sorted_r[-1]
+        delta = higher["f1"] - lower["f1"]
         print(f"  Key Finding:")
-        print(f"    F1 on {higher['dataset_name']} is {delta:.3f} higher than {lower['dataset_name']}.")
+        print(f"    Best F1:  {higher['dataset_name']} ({higher['f1']:.3f})")
+        print(f"    Worst F1: {lower['dataset_name']} ({lower['f1']:.3f})")
+        print(f"    Gap: {delta:.3f}")
         if delta > 0.05:
             print(
-                f"    This suggests the pipeline (trained/tuned on Jigsaw-style data) \n"
-                f"    generalizes differently to conversational LLM interactions (Toxic Chat).\n"
+                f"    The {delta:.3f} F1 gap suggests the pipeline generalizes unevenly\n"
+                f"    across domains — likely because Detoxify and the keyword rules\n"
+                f"    were calibrated on comment-style data, not conversational text.\n"
                 f"    See README — Limitations section — for discussion."
             )
         else:
@@ -187,16 +193,18 @@ def print_comparison(results: list[dict]):
 
 
 # ---------------------------------------------------------------------------
-# Main
+# Main — standard evaluation (Jigsaw + Toxic Chat)
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    import os
+    use_wildchat = "--wildchat" in sys.argv
 
-    jigsaw_path  = os.path.join(DATA_DIR, "jigsaw_sample.csv")
-    tchat_path   = os.path.join(DATA_DIR, "toxicchat_sample.csv")
+    jigsaw_path = os.path.join(DATA_DIR, "jigsaw_sample.csv")
+    tchat_path  = os.path.join(DATA_DIR, "toxicchat_sample.csv")
+    wc_path     = os.path.join(DATA_DIR, "wildchat_sample.csv")
 
-    missing = [p for p in [jigsaw_path, tchat_path] if not os.path.exists(p)]
+    required = [jigsaw_path, tchat_path]
+    missing = [p for p in required if not os.path.exists(p)]
     if missing:
         print("Missing data files:")
         for p in missing:
@@ -204,26 +212,39 @@ if __name__ == "__main__":
         print("\nRun this first:\n  python data/prepare_data.py")
         sys.exit(1)
 
+    if use_wildchat and not os.path.exists(wc_path):
+        print(f"WildChat sample not found at {wc_path}")
+        print("Run this first:\n  python data/prepare_data.py")
+        sys.exit(1)
+
     print("Loading datasets...")
     jigsaw_df = pd.read_csv(jigsaw_path)
     tchat_df  = pd.read_csv(tchat_path)
     print(f"  Jigsaw:     {len(jigsaw_df)} rows")
-    print(f"  Toxic Chat: {len(tchat_df)} rows\n")
+    print(f"  Toxic Chat: {len(tchat_df)} rows")
 
     results = []
-
     results.append(evaluate_dataset(
         df=jigsaw_df,
         text_col="comment_text",
         label_col="toxic",
         dataset_name="Jigsaw Toxicity",
     ))
-
     results.append(evaluate_dataset(
         df=tchat_df,
         text_col="user_input",
         label_col="toxicity",
         dataset_name="Toxic Chat",
     ))
+
+    if use_wildchat:
+        wc_df = pd.read_csv(wc_path)
+        print(f"  WildChat:   {len(wc_df)} rows")
+        results.append(evaluate_dataset(
+            df=wc_df,
+            text_col="comment_text",
+            label_col="toxic",
+            dataset_name="WildChat",
+        ))
 
     print_comparison(results)
