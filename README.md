@@ -130,7 +130,7 @@ fraud-dashboard/
 
 ---
 
-## AI Usage Disclosure (CS 153 Requirement)
+## AI Usage Disclosure 
 
 Claude (Anthropic) was used throughout this project to:
 - Write and structure boilerplate FastAPI and Python code
