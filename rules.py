@@ -1,18 +1,29 @@
 """
 rules.py — Hand-written signal rules for the Fraud Review Dashboard.
 
-Each rule is a fast, deterministic check that runs before (and independently of)
-the Detoxify model. Rules are cheap to compute and easy to explain to analysts.
+Each rule is a fast, deterministic check that runs independently of Detoxify.
+Rules are cheap to compute and easy to explain to analysts.
+
+Rules:
+    Original (4):
+        EXCESSIVE_CAPS         — >40% uppercase letters
+        KEYWORD_FLAG           — badwords + fraud-specific terms (hughsie/badwords)
+        SHORT_SUSPICIOUS       — <15 words with toxicity score >0.3
+        REPEATED_CHARS         — any character repeated 4+ times in a row
+
+    New (6, informed by WildChat violation categories):
+        URL_DETECTED           — contains a hyperlink (phishing/spam signal)
+        PERSONAL_INFO_REQUEST  — asks for SSN, password, credit card, etc.
+        THREAT_LANGUAGE        — direct threat phrases ("I will kill", "I'll hurt", etc.)
+        SUBSTANCE_REFERENCE    — references to drug use methods or illegal substances
+        EXCESSIVE_PUNCTUATION  — 3+ consecutive ! or ? (spam/aggression signal)
+        SELF_HARM_REFERENCE    — language patterns associated with self-harm
 
 Public API:
-    run_rules(text: str) -> list[dict]
-        Returns a list of triggered rules, each a dict with keys:
-            rule   (str) — rule name in SCREAMING_SNAKE_CASE
-            detail (str) — human-readable explanation of why it triggered
+    run_rules(text: str, detoxify_toxicity: float = 0.0) -> list[dict]
 
 Keyword list source: badwords by Richard Hughes
     https://github.com/hughsie/badwords (English list)
-    Fetched at import time; falls back to a hardcoded list if the fetch fails.
 """
 
 import re
@@ -20,35 +31,62 @@ import urllib.request
 from functools import lru_cache
 
 # ---------------------------------------------------------------------------
-# Keyword list — fetched from hughsie/badwords, English list
+# Keyword list
 # ---------------------------------------------------------------------------
 
-_BADWORDS_URL = (
-    "https://raw.githubusercontent.com/hughsie/badwords/main/en"
-)
+_BADWORDS_URL = "https://raw.githubusercontent.com/hughsie/badwords/main/en"
 
-# Fraud-specific terms that are not in the generic bad-word list
 _FRAUD_TERMS = [
-    "refund",
-    "lawsuit",
-    "fake",
-    "bot",
-    "click here",
-    "wire transfer",
-    "free money",
-    "guaranteed",
-    "act now",
-    "limited time",
-    "verify your account",
-    "suspended",
-    "urgent",
+    "refund", "lawsuit", "fake", "bot", "click here", "wire transfer",
+    "free money", "guaranteed", "act now", "limited time", "verify your account",
+    "suspended", "urgent", "send money", "gift card", "bitcoin payment",
+    "your account has been", "confirm your identity", "unusual activity",
 ]
 
-# Hardcoded fallback — a small but representative set
 _FALLBACK_BADWORDS = [
     "damn", "hell", "crap", "piss", "ass", "bastard", "bitch", "shit",
     "fuck", "cunt", "dick", "cock", "pussy", "asshole", "motherfucker",
     "nigger", "faggot", "retard", "whore", "slut",
+]
+
+# Substance-related terms (WildChat: Controlled/Regulated Substances — 1,257 cases)
+_SUBSTANCE_TERMS = [
+    r"\bsnort\b", r"\bshoot\s+up\b", r"\binject\b",
+    r"\bmeth\b", r"\bheroin\b", r"\bcrack\b", r"\bfentanyl\b",
+    r"\bcocaine\b", r"\bxanax\b", r"\bprescription.{0,20}abuse\b",
+    r"\bget\s+high\b", r"\bget\s+stoned\b", r"\bdrug\s+dealer\b",
+    r"\bbuy\s+drugs\b", r"\billegal\s+pills\b",
+]
+
+# Threat language patterns (WildChat: Violence + Threat — 2,110 + 130 cases)
+_THREAT_PATTERNS = [
+    r"\bi('ll|'m going to|will|want to|plan to)\s+(kill|murder|hurt|harm|attack|destroy|shoot|stab|beat)\s+(you|him|her|them|someone|people)\b",
+    r"\b(kill|murder|shoot|stab|attack)\s+(you|him|her|them|everyone)\b",
+    r"\byou('re| are)\s+(dead|going to die|going to pay)\b",
+    r"\bwatch\s+your\s+back\b",
+    r"\bi\s+know\s+where\s+you\s+live\b",
+    r"\bi('ll| will)\s+find\s+you\b",
+]
+
+# Self-harm patterns (WildChat: Suicide and Self Harm — 758 cases)
+_SELF_HARM_PATTERNS = [
+    r"\b(want to|going to|thinking about|planning to)\s+(kill|hurt|harm)\s+(myself|me)\b",
+    r"\b(suicide|suicidal|end\s+my\s+life|take\s+my\s+life)\b",
+    r"\b(cut\s+myself|self.?harm|self.?hurt)\b",
+    r"\bdon't\s+want\s+to\s+(live|be\s+here|exist)\s+anymore\b",
+    r"\bno\s+reason\s+to\s+(live|go\s+on)\b",
+]
+
+# Personal info request patterns (WildChat: PII/Privacy category)
+_PII_PATTERNS = [
+    r"\b(social\s+security|ssn)\s*(number|#)?\b",
+    r"\b(credit|debit)\s+card\s+(number|details|info)\b",
+    r"\bbank\s+(account|routing)\s+(number|details)\b",
+    r"\bpassword\b",
+    r"\bpin\s+(number|code)\b",
+    r"\bdate\s+of\s+birth\b",
+    r"\bmother'?s\s+maiden\s+name\b",
+    r"\bsend\s+(me\s+)?your\s+(address|location|number|photo|pic)\b",
 ]
 
 
@@ -62,7 +100,6 @@ def _load_keyword_list() -> list[str]:
     try:
         with urllib.request.urlopen(_BADWORDS_URL, timeout=5) as resp:
             raw = resp.read().decode("utf-8")
-        # Each line is one word; skip comments (#) and blank lines
         fetched = [
             line.strip().lower()
             for line in raw.splitlines()
@@ -72,14 +109,11 @@ def _load_keyword_list() -> list[str]:
     except Exception as exc:
         print(f"[rules] Could not fetch badwords list ({exc}); using fallback")
         fetched = _FALLBACK_BADWORDS
-
-    # Merge with fraud-specific terms, deduplicate
-    combined = list(set(fetched + _FRAUD_TERMS))
-    return combined
+    return list(set(fetched + _FRAUD_TERMS))
 
 
 # ---------------------------------------------------------------------------
-# Individual rule implementations
+# Original rules (4)
 # ---------------------------------------------------------------------------
 
 def _check_excessive_caps(text: str) -> dict | None:
@@ -97,27 +131,18 @@ def _check_excessive_caps(text: str) -> dict | None:
 
 
 def _check_keyword_flag(text: str) -> dict | None:
-    """
-    KEYWORD_FLAG: text contains a word from the merged bad-word + fraud-term list.
-    Uses whole-word matching to avoid false positives on substrings.
-    """
+    """KEYWORD_FLAG: matches bad words + fraud-specific terms."""
     keywords = _load_keyword_list()
     text_lower = text.lower()
-
     matched = []
     for kw in keywords:
-        # Multi-word fraud terms: substring match is fine (e.g. "click here")
         if " " in kw:
             if kw in text_lower:
                 matched.append(kw)
         else:
-            # Single words: require word boundary to avoid e.g. "classic" → "ass"
-            pattern = r"\b" + re.escape(kw) + r"\b"
-            if re.search(pattern, text_lower):
+            if re.search(r"\b" + re.escape(kw) + r"\b", text_lower):
                 matched.append(kw)
-
     if matched:
-        # Show up to 3 matched terms in the detail string
         shown = matched[:3]
         extra = len(matched) - 3
         detail = f"Matched keyword(s): {', '.join(shown)}"
@@ -128,12 +153,7 @@ def _check_keyword_flag(text: str) -> dict | None:
 
 
 def _check_short_suspicious(text: str, detoxify_toxicity: float = 0.0) -> dict | None:
-    """
-    SHORT_SUSPICIOUS: fewer than 15 words AND detoxify toxicity score > 0.3.
-    This rule requires the toxicity score passed in from the caller.
-    If score is not available (e.g. during evaluate.py), it checks length only
-    when score > 0.3 is explicitly provided.
-    """
+    """SHORT_SUSPICIOUS: fewer than 15 words with toxicity score > 0.3."""
     word_count = len(text.split())
     if word_count < 15 and detoxify_toxicity > 0.3:
         return {
@@ -147,7 +167,7 @@ def _check_short_suspicious(text: str, detoxify_toxicity: float = 0.0) -> dict |
 
 
 def _check_repeated_chars(text: str) -> dict | None:
-    """REPEATED_CHARS: any single character repeated 4 or more times in a row."""
+    """REPEATED_CHARS: any single character repeated 4+ times in a row."""
     match = re.search(r"(.)\1{3,}", text)
     if match:
         char = match.group(1)
@@ -161,12 +181,112 @@ def _check_repeated_chars(text: str) -> dict | None:
 
 
 # ---------------------------------------------------------------------------
+# New rules (6) — informed by WildChat violation categories
+# ---------------------------------------------------------------------------
+
+def _check_url_detected(text: str) -> dict | None:
+    """
+    URL_DETECTED: text contains a hyperlink.
+    Strong signal for phishing, spam, and malware distribution.
+    """
+    match = re.search(r"https?://[^\s]+", text)
+    if match:
+        url = match.group(0)
+        display = url[:60] + ("…" if len(url) > 60 else "")
+        return {
+            "rule": "URL_DETECTED",
+            "detail": f"Contains a hyperlink: {display}",
+        }
+    return None
+
+
+def _check_personal_info_request(text: str) -> dict | None:
+    """
+    PERSONAL_INFO_REQUEST: asks for sensitive personal information.
+    Covers SSN, passwords, bank details, and other PII.
+    """
+    text_lower = text.lower()
+    for pattern in _PII_PATTERNS:
+        match = re.search(pattern, text_lower)
+        if match:
+            return {
+                "rule": "PERSONAL_INFO_REQUEST",
+                "detail": f"Requests sensitive personal information: '{match.group(0).strip()}'",
+            }
+    return None
+
+
+def _check_threat_language(text: str) -> dict | None:
+    """
+    THREAT_LANGUAGE: direct threatening phrases toward a person.
+    """
+    text_lower = text.lower()
+    for pattern in _THREAT_PATTERNS:
+        match = re.search(pattern, text_lower)
+        if match:
+            snippet = match.group(0)[:60]
+            return {
+                "rule": "THREAT_LANGUAGE",
+                "detail": f"Contains threatening language: '{snippet}'",
+            }
+    return None
+
+
+def _check_substance_reference(text: str) -> dict | None:
+    """
+    SUBSTANCE_REFERENCE: references to illicit drug use methods or substances.
+    Catches queries that Detoxify scores near 0 despite being harmful.
+    """
+    text_lower = text.lower()
+    for pattern in _SUBSTANCE_TERMS:
+        match = re.search(pattern, text_lower)
+        if match:
+            snippet = match.group(0)[:50]
+            return {
+                "rule": "SUBSTANCE_REFERENCE",
+                "detail": f"References controlled substance use: '{snippet}'",
+            }
+    return None
+
+
+def _check_excessive_punctuation(text: str) -> dict | None:
+    """
+    EXCESSIVE_PUNCTUATION: 3+ consecutive ! or ? marks.
+    Strong signal for spam, aggressive messaging, or manipulative urgency.
+    """
+    match = re.search(r"[!?]{3,}", text)
+    if match:
+        run = match.group(0)
+        return {
+            "rule": "EXCESSIVE_PUNCTUATION",
+            "detail": f"Contains '{run}' — aggressive or spam-like punctuation pattern",
+        }
+    return None
+
+
+def _check_self_harm_reference(text: str) -> dict | None:
+    """
+    SELF_HARM_REFERENCE: language associated with suicide or self-harm.
+    Flag for human review — never auto-remove.
+    """
+    text_lower = text.lower()
+    for pattern in _SELF_HARM_PATTERNS:
+        match = re.search(pattern, text_lower)
+        if match:
+            return {
+                "rule": "SELF_HARM_REFERENCE",
+                "detail": "Contains language associated with self-harm or suicidal ideation — requires sensitive human review",
+            }
+    return None
+
+
+# ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
 
 def run_rules(text: str, detoxify_toxicity: float = 0.0) -> list[dict]:
     """
-    Run all signal rules against the input text.
+    Run all 10 signal rules against the input text.
 
     Args:
         text:               The raw input string to analyze.
@@ -174,40 +294,50 @@ def run_rules(text: str, detoxify_toxicity: float = 0.0) -> list[dict]:
                             Pass this in so SHORT_SUSPICIOUS can use it.
 
     Returns:
-        List of triggered rule dicts, each with 'rule' and 'detail' keys.
+        List of triggered rule dicts with 'rule' and 'detail' keys.
         Empty list means no rules fired.
     """
-    # Warm up the keyword list on first call (cached after that)
     _load_keyword_list()
 
     checkers = [
+        # Original rules
         _check_excessive_caps(text),
         _check_keyword_flag(text),
         _check_short_suspicious(text, detoxify_toxicity),
         _check_repeated_chars(text),
+        # New rules
+        _check_url_detected(text),
+        _check_personal_info_request(text),
+        _check_threat_language(text),
+        _check_substance_reference(text),
+        _check_excessive_punctuation(text),
+        _check_self_harm_reference(text),
     ]
 
-    return [result for result in checkers if result is not None]
+    return [r for r in checkers if r is not None]
 
 
 # ---------------------------------------------------------------------------
-# Quick smoke test — run directly with: python rules.py
+# Smoke test — run directly with: python rules.py
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     tests = [
-        ("HELLO THIS IS VERY SUSPICIOUS AND VERY LOUD AND CAPS", 0.1),
-        ("Click here to get your free money wire transfer refund now", 0.2),
-        ("I hate you", 0.85),
-        ("Noooooooo you can't do thissssss", 0.1),
-        ("This seems like a completely normal and reasonable review.", 0.05),
+        ("THIS PRODUCT IS ABSOLUTELY FAKE AND A TOTAL SCAM", 0.5),
+        ("Click here for your free money wire transfer refund now", 0.1),
+        ("I will kill you, you're dead, watch your back!!!", 0.8),
+        ("How do I snort my prescription benzos to get high faster?", 0.2),
+        ("Send me your social security number and bank account details", 0.1),
+        ("I want to kill myself, I have no reason to live anymore", 0.3),
+        ("Check out this amazing deal https://totally-legit-site.com/free", 0.1),
+        ("Noooooooo this is terribleeeeee WTF!!!", 0.2),
+        ("This seems like a completely normal review.", 0.02),
     ]
     for text, score in tests:
         results = run_rules(text, detoxify_toxicity=score)
-        print(f"\nText: {text!r}")
-        print(f"Score passed in: {score}")
+        print(f"\nText: {text[:70]!r}")
         if results:
             for r in results:
-                print(f"  ✗ {r['rule']}: {r['detail']}")
+                print(f"  ✗ {r['rule']}: {r['detail'][:80]}")
         else:
             print("  ✓ No rules triggered")

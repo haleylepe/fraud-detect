@@ -28,7 +28,7 @@ load_dotenv()  # picks up .env file if present
 
 _client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
-_MODEL = "claude-sonnet-4-20250514"
+_MODEL = "claude-sonnet-4-6"
 
 # ---------------------------------------------------------------------------
 # Prompt builders
@@ -38,18 +38,13 @@ def _build_prompt(
     text: str,
     detoxify_scores: dict[str, float],
     triggered_rules: list[dict],
+    policy: str = "",
+    feedback_examples: list[dict] | None = None,
 ) -> str:
-    """
-    Build the user message sent to Claude.
-    Includes the original text, Detoxify scores, and triggered rules
-    so the model has full context for its explanation.
-    """
-    # Format detoxify scores as a readable list
     score_lines = "\n".join(
         f"  - {k}: {v:.4f}" for k, v in detoxify_scores.items()
     )
 
-    # Format triggered rules (or note that none fired)
     if triggered_rules:
         rule_lines = "\n".join(
             f"  - {r['rule']}: {r['detail']}" for r in triggered_rules
@@ -57,10 +52,37 @@ def _build_prompt(
     else:
         rule_lines = "  (none)"
 
+    policy_section = ""
+    if policy.strip():
+        policy_section = f"""
+ACTIVE COMMUNITY GUIDELINES / POLICY:
+\"\"\"
+{policy.strip()}
+\"\"\"
+
+Also assess whether this content violates any of the above guidelines. If it does, name the specific clause it breaks.
+"""
+
+    calibration_section = ""
+    if feedback_examples:
+        lines = []
+        for ex in feedback_examples:
+            note = ex.get("feedback_note") or "no note"
+            lines.append(
+                f"  [{ex['id']} | {ex['feedback_tag']}] \"{ex['text_preview']}\"\n"
+                f"  Pipeline verdict: {ex['verdict']} ({ex['severity']}) — Analyst note: {note}"
+            )
+        calibration_section = (
+            "\nANALYST CALIBRATION EXAMPLES — previous cases where the pipeline was wrong. "
+            "Adjust your judgment to avoid repeating these mistakes:\n"
+            + "\n\n".join(lines)
+            + "\n"
+        )
+
     return f"""You are a fraud and abuse analyst assistant. A piece of content has been submitted to our review system and the automated pipeline has produced the following signals. Your job is to write a 2-3 sentence plain-English explanation for a non-technical fraud analyst explaining *why* this content looks suspicious or problematic.
 
 Be specific — reference the actual signals. Do not just say "this content is toxic." Explain what pattern or combination of signals makes it concerning. If the content seems mostly clean despite being flagged, say so honestly.
-
+{policy_section}{calibration_section}
 ---
 
 SUBMITTED TEXT:
@@ -85,6 +107,8 @@ def generate_explanation(
     text: str,
     detoxify_scores: dict[str, float],
     triggered_rules: list[dict],
+    policy: str = "",
+    feedback_examples: list[dict] | None = None,
 ) -> str:
     """
     Call the Claude API and return a plain-English explanation string.
@@ -105,7 +129,7 @@ def generate_explanation(
             "Add it to your .env file or export it in your shell."
         )
 
-    prompt = _build_prompt(text, detoxify_scores, triggered_rules)
+    prompt = _build_prompt(text, detoxify_scores, triggered_rules, policy=policy, feedback_examples=feedback_examples)
 
     try:
         message = _client.messages.create(

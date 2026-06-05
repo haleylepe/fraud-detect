@@ -19,29 +19,30 @@
       }
 
       :root {
-        --bg: #0d0f12;
-        --surface: #13161b;
-        --surface-2: #1a1e25;
-        --surface-3: #21262f;
-        --border: #262c36;
-        --border-2: #2e3540;
-        --text-1: #eef0f3;
-        --text-2: #8b95a3;
-        --text-3: #4e5868;
-        --blue: #3b82f6;
-        --blue-dim: #1e3a5f;
-        --blue-glow: rgba(59, 130, 246, 0.15);
+        --bg: #FFFFFF;
+        --surface: #F7F8FA;
+        --surface-2: #F0F2F5;
+        --surface-3: #E9ECF0;
+        --border: #E4E7EC;
+        --border-2: #D0D5DD;
+        --text-1: #101828;
+        --text-2: #475467;
+        --text-3: #98A2B3;
+        --blue: #C0392B;
+        --blue-dim: #FDECEA;
+        --blue-mid: #F5C6C2;
+        --blue-glow: rgba(192, 57, 43, 0.10);
         --green: #22c55e;
-        --green-dim: #14532d;
-        --green-glow: rgba(34, 197, 94, 0.12);
+        --green-dim: #dcfce7;
+        --green-glow: rgba(34, 197, 94, 0.10);
         --red: #ef4444;
-        --red-dim: #450a0a;
-        --red-glow: rgba(239, 68, 68, 0.12);
+        --red-dim: #fee2e0;
+        --red-glow: rgba(239, 68, 68, 0.10);
         --amber: #f59e0b;
-        --amber-dim: #451a03;
-        --amber-glow: rgba(245, 158, 11, 0.12);
+        --amber-dim: #fef3c7;
+        --amber-glow: rgba(245, 158, 11, 0.10);
         --purple: #a78bfa;
-        --purple-dim: #2e1065;
+        --purple-dim: #ede9fe;
         --radius: 8px;
         --radius-lg: 12px;
       }
@@ -407,6 +408,53 @@
         border-bottom: 1px solid var(--border);
         cursor: pointer;
         transition: background 0.15s;
+        position: relative;
+      }
+      .case-delete-btn {
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        opacity: 0;
+        background: transparent;
+        border: none;
+        color: var(--text-3);
+        cursor: pointer;
+        font-size: 13px;
+        padding: 4px 6px;
+        border-radius: 4px;
+        line-height: 1;
+        transition: opacity 0.12s, color 0.12s, background 0.12s;
+        z-index: 2;
+      }
+      .case-row:hover .case-delete-btn {
+        opacity: 1;
+      }
+      .case-delete-btn:hover {
+        color: var(--red);
+        background: var(--red-dim);
+      }
+      .btn-toggle-reviewed {
+        padding: 4px 10px;
+        border-radius: 99px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid var(--border-2);
+        background: transparent;
+        color: var(--text-3);
+        transition: all 0.15s;
+        font-family: "DM Mono", monospace;
+        white-space: nowrap;
+      }
+      .btn-toggle-reviewed:hover {
+        color: var(--text-1);
+        border-color: var(--text-3);
+      }
+      .btn-toggle-reviewed.active {
+        background: var(--surface-3);
+        color: var(--text-1);
+        border-color: var(--text-2);
       }
       .case-row:hover {
         background: var(--surface-2);
@@ -749,8 +797,8 @@
       }
 
       .explanation-card {
-        background: linear-gradient(135deg, #1e3a5f 0%, #1a1e25 100%);
-        border: 1px solid var(--blue-dim);
+        background: var(--blue-dim);
+        border: 1px solid var(--blue-mid);
         border-radius: var(--radius);
         padding: 14px 16px;
       }
@@ -1126,6 +1174,489 @@
         background: var(--border-2);
         border-radius: 99px;
       }
+
+      /* ── Policy indicator (topbar) ── */
+      .policy-chip {
+        display: none;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        background: var(--surface-3);
+        border: 1px solid var(--border-2);
+        border-radius: 99px;
+        font-size: 11px;
+        color: var(--text-2);
+        font-family: "DM Mono", monospace;
+      }
+      .policy-chip.active {
+        display: flex;
+        background: rgba(167, 139, 250, 0.08);
+        border-color: rgba(167, 139, 250, 0.35);
+        color: var(--purple);
+      }
+      .policy-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--purple);
+        flex-shrink: 0;
+      }
+
+      /* ── Policy page ── */
+      .policy-page {
+        padding: 24px;
+        max-width: 720px;
+      }
+      .policy-label-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+      }
+      .field-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--text-3);
+      }
+      .policy-input {
+        width: 100%;
+        background: var(--surface-2);
+        border: 1px solid var(--border-2);
+        border-radius: var(--radius);
+        padding: 10px 12px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 13px;
+        color: var(--text-1);
+        outline: none;
+        transition: border-color 0.15s;
+        margin-bottom: 12px;
+      }
+      .policy-input:focus {
+        border-color: var(--purple);
+      }
+      .policy-input::placeholder {
+        color: var(--text-3);
+      }
+      .policy-active-card {
+        background: rgba(167, 139, 250, 0.06);
+        border: 1px solid rgba(167, 139, 250, 0.25);
+        border-radius: var(--radius);
+        padding: 14px 16px;
+        margin-top: 8px;
+      }
+      .policy-active-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+      .policy-active-label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        color: var(--purple);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .policy-timestamp {
+        font-size: 10px;
+        color: var(--text-3);
+        font-family: "DM Mono", monospace;
+      }
+      .policy-preview-text {
+        font-size: 12px;
+        color: var(--text-2);
+        line-height: 1.65;
+        white-space: pre-wrap;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+      .btn-clear {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 12px;
+        border-radius: var(--radius);
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        background: transparent;
+        color: var(--red);
+        font-family: "DM Sans", sans-serif;
+        transition: all 0.15s;
+        margin-top: 12px;
+      }
+      .btn-clear:hover {
+        background: var(--red-dim);
+      }
+
+      /* ── Archive page ── */
+      .archive-page {
+        padding: 28px 32px;
+        max-width: 820px;
+      }
+      .archive-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+      .archive-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text-1);
+      }
+      .archive-count {
+        font-size: 12px;
+        color: var(--text-3);
+        font-family: "DM Mono", monospace;
+      }
+      .archive-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .archive-row {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 14px 16px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        transition: border-color 0.15s;
+      }
+      .archive-row:hover {
+        border-color: var(--border-2);
+      }
+      .archive-row-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .archive-row-top {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+        flex-wrap: wrap;
+      }
+      .archive-row-text {
+        font-size: 13px;
+        color: var(--text-2);
+        line-height: 1.45;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 6px;
+      }
+      .archive-row-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .archive-row-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex-shrink: 0;
+        align-items: flex-end;
+      }
+      .btn-unarchive {
+        padding: 5px 12px;
+        border-radius: var(--radius);
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid var(--border-2);
+        background: transparent;
+        color: var(--text-2);
+        font-family: "DM Sans", sans-serif;
+        transition: all 0.15s;
+        white-space: nowrap;
+      }
+      .btn-unarchive:hover {
+        background: var(--surface-3);
+        color: var(--text-1);
+        border-color: var(--text-3);
+      }
+      .btn-delete-perm {
+        padding: 4px 10px;
+        border-radius: var(--radius);
+        font-size: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--text-3);
+        font-family: "DM Sans", sans-serif;
+        transition: all 0.15s;
+        white-space: nowrap;
+      }
+      .btn-delete-perm:hover {
+        color: var(--red);
+        border-color: rgba(239,68,68,0.3);
+        background: var(--red-dim);
+      }
+
+      /* ── Case feedback ── */
+      .feedback-section {
+        border-top: 1px solid var(--border);
+        padding: 16px 20px;
+      }
+      .feedback-tag-row {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin: 10px 0;
+      }
+      .feedback-tag-btn {
+        padding: 4px 12px;
+        border-radius: 99px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid var(--border-2);
+        background: transparent;
+        color: var(--text-3);
+        transition: all 0.15s;
+        font-family: "DM Mono", monospace;
+      }
+      .feedback-tag-btn:hover { color: var(--text-1); border-color: var(--text-3); }
+      .feedback-tag-btn.active.fp { background: var(--amber-dim); color: var(--amber); border-color: var(--amber); }
+      .feedback-tag-btn.active.fn { background: var(--red-dim);   color: var(--red);   border-color: var(--red); }
+      .feedback-tag-btn.active.ws { background: var(--blue-dim);  color: var(--blue);  border-color: var(--blue); }
+      .feedback-tag-btn.active.ms { background: var(--purple-dim);color: var(--purple);border-color: var(--purple); }
+      .feedback-note-input {
+        width: 100%;
+        min-height: 64px;
+        background: var(--surface-2);
+        border: 1px solid var(--border-2);
+        border-radius: var(--radius);
+        color: var(--text-1);
+        font-family: "DM Sans", sans-serif;
+        font-size: 13px;
+        padding: 10px 12px;
+        resize: vertical;
+        margin-bottom: 8px;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .feedback-note-input:focus { border-color: var(--text-3); }
+      .btn-save-feedback {
+        padding: 6px 14px;
+        border-radius: var(--radius);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid var(--border-2);
+        background: var(--surface-3);
+        color: var(--text-1);
+        font-family: "DM Sans", sans-serif;
+        transition: all 0.15s;
+      }
+      .btn-save-feedback:hover { border-color: var(--text-3); }
+      .feedback-saved-msg {
+        display: inline-block;
+        font-size: 11px;
+        color: var(--green);
+        margin-left: 10px;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .feedback-saved-msg.show { opacity: 1; }
+      .feedback-tag-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 99px;
+        font-size: 9px;
+        font-weight: 700;
+        font-family: "DM Mono", monospace;
+        letter-spacing: 0.3px;
+      }
+      .feedback-tag-badge.fp { background: var(--amber-dim); color: var(--amber); }
+      .feedback-tag-badge.fn { background: var(--red-dim);   color: var(--red); }
+      .feedback-tag-badge.ws { background: var(--blue-dim);  color: var(--blue); }
+      .feedback-tag-badge.ms { background: var(--purple-dim);color: var(--purple); }
+
+      .archive-empty {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-3);
+        font-size: 13px;
+      }
+      .archive-empty-icon {
+        font-size: 28px;
+        margin-bottom: 10px;
+      }
+
+      /* ── Analytics page ── */
+      .analytics-page {
+        padding: 24px;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .a-stat-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+      }
+      .a-stat {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 18px 20px;
+      }
+      .a-stat-val {
+        font-size: 28px;
+        font-weight: 700;
+        font-family: "DM Mono", monospace;
+        line-height: 1;
+        margin-bottom: 5px;
+        color: var(--text-1);
+      }
+      .a-stat-val.red    { color: var(--red); }
+      .a-stat-val.green  { color: var(--green); }
+      .a-stat-val.amber  { color: var(--amber); }
+      .a-stat-label {
+        font-size: 10px;
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        font-weight: 500;
+      }
+      .a-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .a-panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 20px;
+      }
+      .a-panel-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-1);
+        margin-bottom: 2px;
+      }
+      .a-panel-sub {
+        font-size: 11px;
+        color: var(--text-3);
+        margin-bottom: 16px;
+      }
+      .a-empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100px;
+        color: var(--text-3);
+        font-size: 12px;
+      }
+      .a-legend {
+        display: flex;
+        gap: 16px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+      }
+      .a-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: var(--text-3);
+      }
+      .a-legend-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 2px;
+        flex-shrink: 0;
+      }
+      .a-cluster-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 9px 0;
+        border-bottom: 1px solid var(--border);
+        gap: 12px;
+      }
+      .a-cluster-row:last-child { border-bottom: none; }
+      .a-cluster-rules {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        flex-wrap: wrap;
+      }
+      .a-cluster-plus {
+        font-size: 10px;
+        color: var(--text-3);
+        font-family: "DM Mono", monospace;
+      }
+      .a-cluster-count {
+        font-size: 11px;
+        font-weight: 700;
+        font-family: "DM Mono", monospace;
+        color: var(--text-2);
+        white-space: nowrap;
+        background: var(--surface-3);
+        padding: 2px 9px;
+        border-radius: 99px;
+        border: 1px solid var(--border-2);
+        flex-shrink: 0;
+      }
+
+      /* ── User risk table ── */
+      .a-user-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      .a-user-table th {
+        text-align: left;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--text-3);
+        padding: 0 16px 10px 0;
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+      }
+      .a-user-table td {
+        padding: 10px 16px 10px 0;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-2);
+        vertical-align: middle;
+      }
+      .a-user-table tbody tr:last-child td {
+        border-bottom: none;
+      }
+      .a-user-table tbody tr:hover td {
+        background: var(--surface-2);
+      }
+      .a-risk-badge {
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 99px;
+        font-family: "DM Mono", monospace;
+        letter-spacing: 0.4px;
+        white-space: nowrap;
+      }
+      .a-risk-high   { background: var(--red-dim);    color: var(--red);    border: 1px solid var(--red); }
+      .a-risk-medium { background: var(--amber-dim);  color: var(--amber);  border: 1px solid var(--amber); }
+      .a-risk-low    { background: var(--green-dim);  color: var(--green);  border: 1px solid var(--green); }
     </style>
   </head>
   <body>
@@ -1136,7 +1667,6 @@
           <div class="logo-mark">S</div>
           <div>
             <div class="logo-text">Sentinel</div>
-            <div class="logo-sub">CS 153 · STANFORD</div>
           </div>
         </div>
 
@@ -1156,14 +1686,17 @@
 
         <div class="nav-section" style="margin-top: 8px">
           <div class="nav-label">System</div>
-          <div class="nav-item" style="cursor: default">
-            <span class="icon">📊</span>
-            <span style="color: var(--text-3)">Analytics</span>
-          </div>
-          <div class="nav-item" style="cursor: default">
-            <span class="icon">📋</span>
-            <span style="color: var(--text-3)">Policies</span>
-          </div>
+          <button class="nav-item" onclick="showPage('analytics', this)">
+            <span class="icon">📊</span> Analytics
+          </button>
+          <button class="nav-item" onclick="showPage('policies', this)">
+            <span class="icon">📋</span> Policies
+            <span class="nav-badge" id="policyBadge" style="display:none;background:var(--purple)">ON</span>
+          </button>
+          <button class="nav-item" onclick="showPage('archive', this)">
+            <span class="icon">🗄</span> Archive
+            <span class="nav-badge" id="archiveBadge" style="display:none;background:var(--surface-3);color:var(--text-2);border:1px solid var(--border-2)">0</span>
+          </button>
         </div>
 
         <div class="sidebar-footer">
@@ -1181,6 +1714,10 @@
             <div class="topbar-title" id="topbarTitle">Review Queue</div>
           </div>
           <div class="topbar-right">
+            <div class="policy-chip" id="policyChip">
+              <div class="policy-dot"></div>
+              <span id="policyChipName">Policy active</span>
+            </div>
             <div class="status-dot"></div>
             <span class="status-label">LIVE</span>
           </div>
@@ -1250,13 +1787,15 @@
                   </button>
                 </div>
                 <button
+                  class="btn-toggle-reviewed"
+                  id="btnHideReviewed"
+                  onclick="toggleHideReviewed()"
+                >
+                  Hide reviewed
+                </button>
+                <button
                   class="btn-add ml-auto"
-                  onclick="
-                    showPage(
-                      'submit',
-                      document.querySelector('.nav-item:nth-child(2)'),
-                    )
-                  "
+                  onclick="showPage('submit', document.querySelectorAll('.nav-item')[1])"
                 >
                   + New Case
                 </button>
@@ -1480,6 +2019,156 @@
             </div>
           </div>
         </div>
+
+        <!-- ══ PAGE: Policies ══ -->
+        <div class="page" id="page-policies">
+          <div class="policy-page">
+            <div class="submit-card">
+              <div class="submit-title">Community Guidelines Policy</div>
+              <div class="submit-sub" style="margin-bottom: 20px">
+                Define the content rules your community must follow. When a policy is active,
+                Claude references these guidelines when generating case explanations — surfacing
+                violations even when automated scores are low.
+              </div>
+
+              <div style="margin-bottom: 16px">
+                <div class="policy-label-row">
+                  <span class="field-label">Policy name</span>
+                </div>
+                <input
+                  class="policy-input"
+                  id="policyNameInput"
+                  type="text"
+                  placeholder="e.g. Marketplace Guidelines v2"
+                />
+              </div>
+
+              <div>
+                <div class="policy-label-row">
+                  <span class="field-label">Guidelines</span>
+                  <span class="char-count" id="policyCharCount" style="margin-left: auto">0 chars</span>
+                </div>
+                <textarea
+                  id="policyContentInput"
+                  style="min-height: 180px"
+                  placeholder="Users may not post content that:&#10;• Promotes fraudulent goods or services&#10;• Contains hate speech or targeted harassment&#10;• Solicits financial information or wire transfers&#10;• Uses deceptive pricing or fake reviews"
+                ></textarea>
+              </div>
+
+              <div class="submit-footer" style="margin-top: 12px">
+                <span></span>
+                <button class="btn-submit" id="policyBtn" onclick="savePolicy()" style="background: var(--purple)">
+                  <div class="spinner"></div>
+                  <span class="btn-text">Save Policy</span>
+                </button>
+              </div>
+              <div class="error-msg" id="policyError"></div>
+            </div>
+
+            <!-- Active policy preview -->
+            <div id="policyActiveSection" style="display:none">
+              <div class="policy-active-card">
+                <div class="policy-active-header">
+                  <div class="policy-active-label">
+                    <div class="policy-dot"></div>
+                    Active policy
+                  </div>
+                  <span class="policy-timestamp" id="policyUpdatedAt"></span>
+                </div>
+                <div class="policy-preview-text" id="policyPreviewText"></div>
+                <button class="btn-clear" onclick="clearPolicy()">✕ Clear policy</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ PAGE: Analytics ══ -->
+        <div class="page" id="page-analytics">
+          <div class="analytics-page">
+            <!-- Summary stats -->
+            <div class="a-stat-row">
+              <div class="a-stat">
+                <div class="a-stat-val" id="a-total">—</div>
+                <div class="a-stat-label">Total Cases</div>
+              </div>
+              <div class="a-stat">
+                <div class="a-stat-val red" id="a-highcount">—</div>
+                <div class="a-stat-label">High Severity</div>
+              </div>
+              <div class="a-stat">
+                <div class="a-stat-val amber" id="a-flagrate">—</div>
+                <div class="a-stat-label">Flag Rate</div>
+              </div>
+              <div class="a-stat">
+                <div class="a-stat-val green" id="a-reviewed">—</div>
+                <div class="a-stat-label">Review Rate</div>
+              </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="a-panel">
+              <div class="a-panel-title">Case Volume</div>
+              <div class="a-panel-sub">Submissions per day — flagged (red) stacked on clean (green)</div>
+              <div id="chartTimeline"><div class="a-empty">Loading…</div></div>
+              <div class="a-legend">
+                <div class="a-legend-item"><div class="a-legend-dot" style="background:var(--red)"></div>Flagged</div>
+                <div class="a-legend-item"><div class="a-legend-dot" style="background:var(--green)"></div>Clean</div>
+              </div>
+            </div>
+
+            <!-- Rule freq + Severity donut -->
+            <div class="a-row">
+              <div class="a-panel">
+                <div class="a-panel-title">Top Signal Rules</div>
+                <div class="a-panel-sub">Most frequently triggered detection rules</div>
+                <div id="chartRuleFreq"><div class="a-empty">Loading…</div></div>
+              </div>
+              <div class="a-panel">
+                <div class="a-panel-title">Severity Distribution</div>
+                <div class="a-panel-sub">Breakdown across all cases (active + archived)</div>
+                <div id="chartSeverity"><div class="a-empty">Loading…</div></div>
+              </div>
+            </div>
+
+            <!-- Action breakdown + Clusters -->
+            <div class="a-row">
+              <div class="a-panel">
+                <div class="a-panel-title">Analyst Actions</div>
+                <div class="a-panel-sub">Decision breakdown across all reviewed cases</div>
+                <div id="chartActions"><div class="a-empty">Loading…</div></div>
+              </div>
+              <div class="a-panel">
+                <div class="a-panel-title">Rule Co-occurrence</div>
+                <div class="a-panel-sub">Cases that triggered multiple signal rules together</div>
+                <div id="chartClusters"><div class="a-empty">Loading…</div></div>
+              </div>
+            </div>
+
+            <!-- User risk view — full width -->
+            <div class="a-panel">
+              <div class="a-panel-title">User Risk View</div>
+              <div class="a-panel-sub">Submission count, flag rate, and last analyst action per identified user — sorted by risk</div>
+              <div id="chartUserRisk"><div class="a-empty">Loading…</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ PAGE: Archive ══ -->
+        <div class="page" id="page-archive">
+          <div class="archive-page">
+            <div class="archive-header">
+              <div class="archive-title">Archived Cases</div>
+              <span class="archive-count" id="archiveCountLabel">0 cases</span>
+            </div>
+            <div id="archiveList">
+              <div class="archive-empty">
+                <div class="archive-empty-icon">🗄</div>
+                No archived cases yet.
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
       <!-- /main -->
     </div>
@@ -1500,11 +2189,68 @@
 
     <script>
       // ══ State ══
-      let cases = []; // all submitted cases
+      let cases = [];
+      let archivedCases = [];
       let selectedId = null;
       let queueFilter = "all";
+      let hideReviewed = false;
       let batchAllData = [];
       let batchFilter = "all";
+      let activePolicy = null;
+
+      // ══ Feedback tags ══
+      const FEEDBACK_TAGS = [
+        { label: "False Positive", cls: "fp" },
+        { label: "False Negative", cls: "fn" },
+        { label: "Wrong Severity", cls: "ws" },
+        { label: "Missed Signal",  cls: "ms" },
+      ];
+
+      function _feedbackCls(tag) {
+        const match = FEEDBACK_TAGS.find(t => t.label === tag);
+        return match ? match.cls : "";
+      }
+
+      function selectFeedbackTag(btn) {
+        const row = btn.closest(".feedback-tag-row");
+        row.querySelectorAll(".feedback-tag-btn").forEach(b => {
+          b.classList.remove("active", "fp", "fn", "ws", "ms");
+        });
+        // clicking the already-active tag deselects it
+        if (btn.dataset.tag !== (row.dataset.current || "")) {
+          btn.classList.add("active", btn.dataset.cls);
+          row.dataset.current = btn.dataset.tag;
+        } else {
+          row.dataset.current = "";
+        }
+      }
+
+      async function saveFeedback(caseId) {
+        const row = document.getElementById("feedbackTagRow");
+        const activeBtn = row ? row.querySelector(".feedback-tag-btn.active") : null;
+        const tag  = activeBtn ? activeBtn.dataset.tag : null;
+        const note = (document.getElementById("feedbackNote")?.value ?? "").trim();
+
+        const c = cases.find(x => x.id === caseId)
+               || archivedCases.find(x => x.id === caseId);
+        if (c) { c.feedback_tag = tag; c.feedback_note = note; }
+        renderQueue();
+
+        const msg = document.getElementById("feedbackSavedMsg");
+        if (msg) {
+          msg.classList.add("show");
+          setTimeout(() => msg.classList.remove("show"), 2000);
+        }
+        try {
+          await fetch(`/cases/${caseId}/feedback`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tag, note }),
+          });
+        } catch (e) {
+          console.warn("Failed to save feedback:", e);
+        }
+      }
 
       // ══ Severity from scores + rules ══
       function getSeverity(data) {
@@ -1533,9 +2279,28 @@
           queue: "Review Queue",
           submit: "Submit Case",
           batch: "Batch Analyzer",
+          policies: "Policies",
+          archive: "Archive",
+          analytics: "Analytics",
         };
+        if (name === "archive") renderArchive();
+        if (name === "analytics") loadAnalytics().then(renderAnalytics);
         document.getElementById("topbarTitle").textContent =
           titles[name] || name;
+      }
+
+      // ══ DB loader — called on startup and after each submit ══
+      async function loadCasesFromDB() {
+        try {
+          const res = await fetch("/cases");
+          if (!res.ok) return;
+          const data = await res.json();
+          cases = data.map((c) => ({ ...c, ts: new Date(c.created_at) }));
+          updateMetrics();
+          renderQueue();
+        } catch (e) {
+          console.warn("Could not load cases:", e);
+        }
       }
 
       // ══ Submit single case ══
@@ -1563,22 +2328,12 @@
           }
           const data = await res.json();
 
-          const c = {
-            id: "CASE-" + String(cases.length + 1).padStart(4, "0"),
-            ...data,
-            severity: getSeverity(data),
-            action: "pending",
-            ts: new Date(),
-          };
-          cases.unshift(c);
-          updateMetrics();
-          renderQueue();
+          await loadCasesFromDB();
           document.getElementById("submitText").value = "";
           document.getElementById("submitCharCount").textContent = "0 / 10,000";
 
-          // Switch to queue and select new case
           showPage("queue", document.querySelector(".nav-item"));
-          setTimeout(() => selectCase(c.id), 100);
+          selectCase(data.id);
         } catch (e) {
           showErr("submitError", e.message);
         } finally {
@@ -1597,10 +2352,13 @@
 
       // ══ Queue rendering ══
       function renderQueue() {
-        const filtered =
+        let filtered =
           queueFilter === "all"
             ? cases
             : cases.filter((c) => c.severity === queueFilter);
+        if (hideReviewed) {
+          filtered = filtered.filter((c) => c.action === "pending");
+        }
 
         document.getElementById("queueCountLabel").textContent =
           filtered.length + " case" + (filtered.length !== 1 ? "s" : "");
@@ -1636,6 +2394,7 @@
               <span class="case-id">${c.id}</span>
               <span class="sev-badge ${c.severity}">${c.severity.toUpperCase()}</span>
               ${c.action !== "pending" ? `<span class="action-badge ${c.action}">${c.action.toUpperCase()}</span>` : ""}
+              ${c.feedback_tag ? `<span class="feedback-tag-badge ${_feedbackCls(c.feedback_tag)}">${c.feedback_tag}</span>` : ""}
             </div>
             <div class="case-text">${esc(c.text_preview)}</div>
             <div class="case-meta">
@@ -1645,6 +2404,7 @@
               <span class="case-time">${time}</span>
             </div>
           </div>
+          <button class="case-delete-btn" onclick="archiveCase('${c.id}', event)" title="Archive case">⊟</button>
         </div>`;
           })
           .join("");
@@ -1745,9 +2505,28 @@
       </div>
 
       <div class="action-bar">
-        <button class="action-btn action-approve" onclick="takeAction('${c.id}','approved')"  >✓ Approve</button>
-        <button class="action-btn action-remove"  onclick="takeAction('${c.id}','removed')"   >✗ Remove</button>
-        <button class="action-btn action-escalate" onclick="takeAction('${c.id}','escalated')" >↑ Escalate</button>
+        <button class="action-btn action-approve" onclick="takeAction('${c.id}','approved')">✓ Approve</button>
+        <button class="action-btn action-remove"  onclick="takeAction('${c.id}','removed')">✗ Remove</button>
+        <button class="action-btn action-escalate" onclick="takeAction('${c.id}','escalated')">↑ Escalate</button>
+        <button class="action-btn" style="margin-left:auto;color:var(--text-3);border-color:var(--border-2)" onclick="archiveCase('${c.id}', event)">Archive</button>
+      </div>
+
+      <div class="feedback-section">
+        <div class="detail-section-title">Analyst Feedback</div>
+        <div class="feedback-tag-row" id="feedbackTagRow">
+          ${FEEDBACK_TAGS.map(({label, cls}) => `
+            <button class="feedback-tag-btn ${c.feedback_tag === label ? `active ${cls}` : ''}"
+              data-tag="${label}" data-cls="${cls}"
+              onclick="selectFeedbackTag(this)">
+              ${label}
+            </button>`).join('')}
+        </div>
+        <textarea class="feedback-note-input" id="feedbackNote"
+          placeholder="Describe why this was a misclassification…">${esc(c.feedback_note || '')}</textarea>
+        <div>
+          <button class="btn-save-feedback" onclick="saveFeedback('${c.id}')">Save feedback</button>
+          <span class="feedback-saved-msg" id="feedbackSavedMsg">✓ Saved</span>
+        </div>
       </div>`;
 
         requestAnimationFrame(() => {
@@ -1757,13 +2536,359 @@
         });
       }
 
-      function takeAction(id, action) {
+      async function takeAction(id, action) {
         const c = cases.find((x) => x.id === id);
         if (!c) return;
         c.action = action;
         updateMetrics();
         selectCase(id);
         renderQueue();
+        // Persist to database
+        try {
+          await fetch(`/cases/${id}/action`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action }),
+          });
+        } catch (e) {
+          console.warn("Failed to persist action:", e);
+        }
+      }
+
+      async function archiveCase(id, event) {
+        if (event) event.stopPropagation();
+        const c = cases.find((x) => x.id === id);
+        if (!c) return;
+        cases = cases.filter((x) => x.id !== id);
+        archivedCases.unshift({ ...c });
+        if (selectedId === id) {
+          selectedId = null;
+          document.getElementById("caseDetail").innerHTML = `
+            <div class="detail-empty">
+              <div class="detail-empty-icon">←</div>
+              <div class="detail-empty-text">Select a case from the queue<br/>to view details.</div>
+            </div>`;
+        }
+        updateMetrics();
+        renderQueue();
+        _updateArchiveBadge();
+        try {
+          await fetch(`/cases/${id}/archive`, { method: "POST" });
+        } catch (e) {
+          console.warn("Failed to archive case:", e);
+        }
+      }
+
+      async function unarchiveCase(id) {
+        const c = archivedCases.find((x) => x.id === id);
+        if (!c) return;
+        archivedCases = archivedCases.filter((x) => x.id !== id);
+        cases.unshift({ ...c });
+        updateMetrics();
+        renderQueue();
+        renderArchive();
+        _updateArchiveBadge();
+        try {
+          await fetch(`/cases/${id}/unarchive`, { method: "POST" });
+        } catch (e) {
+          console.warn("Failed to unarchive case:", e);
+        }
+      }
+
+      async function permanentlyDeleteCase(id) {
+        archivedCases = archivedCases.filter((x) => x.id !== id);
+        renderArchive();
+        _updateArchiveBadge();
+        try {
+          await fetch(`/cases/${id}`, { method: "DELETE" });
+        } catch (e) {
+          console.warn("Failed to delete case:", e);
+        }
+      }
+
+      async function loadArchivedCases() {
+        try {
+          const res = await fetch("/cases/archived");
+          if (!res.ok) return;
+          const data = await res.json();
+          archivedCases = data.map((c) => ({ ...c, ts: new Date(c.created_at) }));
+          _updateArchiveBadge();
+        } catch (e) {
+          console.warn("Could not load archived cases:", e);
+        }
+      }
+
+      function _updateArchiveBadge() {
+        const badge = document.getElementById("archiveBadge");
+        if (archivedCases.length > 0) {
+          badge.textContent = archivedCases.length;
+          badge.style.display = "";
+        } else {
+          badge.style.display = "none";
+        }
+      }
+
+      function renderArchive() {
+        const el = document.getElementById("archiveList");
+        const countEl = document.getElementById("archiveCountLabel");
+        countEl.textContent = archivedCases.length + " case" + (archivedCases.length !== 1 ? "s" : "");
+        if (!archivedCases.length) {
+          el.innerHTML = `<div class="archive-empty"><div class="archive-empty-icon">🗄</div>No archived cases yet.</div>`;
+          return;
+        }
+        el.innerHTML = archivedCases.map((c) => {
+          const tox = (c.detoxify_scores.toxicity * 100).toFixed(0);
+          const toxClass = c.detoxify_scores.toxicity > 0.5 ? "high" : c.detoxify_scores.toxicity > 0.2 ? "med" : "low";
+          const topRule = c.triggered_rules[0];
+          const date = c.ts.toLocaleDateString([], { month: "short", day: "numeric" });
+          const time = c.ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+          return `
+        <div class="archive-row">
+          <div class="severity-icon sev-${c.severity}">${SEV_ICONS[c.severity]}</div>
+          <div class="archive-row-body">
+            <div class="archive-row-top">
+              <span class="case-id">${c.id}</span>
+              <span class="sev-badge ${c.severity}">${c.severity.toUpperCase()}</span>
+              ${c.action !== "pending" ? `<span class="action-badge ${c.action}">${c.action.toUpperCase()}</span>` : ""}
+            </div>
+            <div class="archive-row-text">${esc(c.text_preview)}</div>
+            <div class="archive-row-meta">
+              ${topRule ? `<span class="case-rule-tag">${topRule.rule}</span>` : ""}
+              ${c.triggered_rules.length > 1 ? `<span class="case-rule-tag">+${c.triggered_rules.length - 1} more</span>` : ""}
+              <span class="case-score ${toxClass}">tox ${tox}%</span>
+              <span class="case-time">${date} ${time}</span>
+            </div>
+          </div>
+          <div class="archive-row-actions">
+            <button class="btn-unarchive" onclick="unarchiveCase('${c.id}')">↑ Restore</button>
+            <button class="btn-delete-perm" onclick="permanentlyDeleteCase('${c.id}')">Delete permanently</button>
+          </div>
+        </div>`;
+        }).join("");
+      }
+
+      function toggleHideReviewed() {
+        hideReviewed = !hideReviewed;
+        const btn = document.getElementById("btnHideReviewed");
+        btn.classList.toggle("active", hideReviewed);
+        btn.textContent = hideReviewed ? "Show all" : "Hide reviewed";
+        renderQueue();
+      }
+
+      // ══ Analytics ══
+      let analyticsData = null;
+
+      async function loadAnalytics() {
+        try {
+          const res = await fetch("/analytics");
+          if (!res.ok) return;
+          analyticsData = await res.json();
+        } catch (e) {
+          console.warn("Could not load analytics:", e);
+        }
+      }
+
+      function renderAnalytics() {
+        if (!analyticsData) {
+          ["chartTimeline","chartRuleFreq","chartSeverity","chartActions","chartClusters","chartUserRisk"]
+            .forEach(id => { document.getElementById(id).innerHTML = '<div class="a-empty">No data yet — submit a case to get started.</div>'; });
+          return;
+        }
+        const d = analyticsData;
+
+        // Summary stats
+        const flagged = (d.severity_distribution.high || 0) + (d.severity_distribution.medium || 0) + (d.severity_distribution.low || 0);
+        const reviewed = (d.action_distribution.approved || 0) + (d.action_distribution.removed || 0) + (d.action_distribution.escalated || 0);
+        document.getElementById("a-total").textContent    = d.total;
+        document.getElementById("a-highcount").textContent = d.severity_distribution.high || 0;
+        document.getElementById("a-flagrate").textContent  = d.total ? Math.round(flagged / d.total * 100) + "%" : "0%";
+        document.getElementById("a-reviewed").textContent  = d.total ? Math.round(reviewed / d.total * 100) + "%" : "0%";
+
+        _renderTimeline(d.timeline);
+
+        _renderHBar("chartRuleFreq", d.rule_frequency,
+          { labelKey: "rule", valueKey: "count", barColor: "var(--red)" });
+
+        _renderSeverityDonut(d.severity_distribution);
+
+        _renderHBar("chartActions", [
+          { label: "Pending",   count: d.action_distribution.pending   || 0, color: "var(--text-3)" },
+          { label: "Approved",  count: d.action_distribution.approved  || 0, color: "var(--green)"  },
+          { label: "Removed",   count: d.action_distribution.removed   || 0, color: "var(--red)"    },
+          { label: "Escalated", count: d.action_distribution.escalated || 0, color: "var(--purple)" },
+        ], { labelKey: "label", valueKey: "count" });
+
+        _renderClusters(d.rule_clusters);
+        _renderUserRisk(d.user_risk || []);
+      }
+
+      function _renderTimeline(timeline) {
+        const el = document.getElementById("chartTimeline");
+        if (!timeline || !timeline.length) {
+          el.innerHTML = '<div class="a-empty">No cases yet.</div>';
+          return;
+        }
+        const BAR_W = 32, GAP = 7, CHART_H = 110, LABEL_H = 18, PAD_L = 30, PAD_R = 8;
+        const maxVal = Math.max(...timeline.map(d => d.flagged + d.clean), 1);
+        const totalW = PAD_L + timeline.length * (BAR_W + GAP) - GAP + PAD_R;
+        const totalH = CHART_H + LABEL_H;
+
+        const guides = [0.25, 0.5, 0.75, 1.0].map(pct => {
+          const y = CHART_H - pct * CHART_H;
+          return `<line x1="${PAD_L}" x2="${totalW}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#262c36" stroke-width="1"/>
+                  <text x="${PAD_L - 4}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="#4e5868" font-size="9" font-family="DM Mono,monospace">${Math.round(pct * maxVal)}</text>`;
+        }).join('');
+
+        const bars = timeline.map((d, i) => {
+          const x = PAD_L + i * (BAR_W + GAP);
+          const cleanH  = (d.clean   / maxVal) * CHART_H;
+          const flaggedH = (d.flagged / maxVal) * CHART_H;
+          const totalH_bar = cleanH + flaggedH;
+          const label = d.date.slice(5); // MM-DD
+          return `
+            ${cleanH  > 0 ? `<rect x="${x}" y="${(CHART_H - cleanH).toFixed(1)}"   width="${BAR_W}" height="${cleanH.toFixed(1)}"   rx="2" fill="#22c55e" opacity="0.6"/>` : ''}
+            ${flaggedH > 0 ? `<rect x="${x}" y="${(CHART_H - totalH_bar).toFixed(1)}" width="${BAR_W}" height="${flaggedH.toFixed(1)}" rx="2" fill="#ef4444" opacity="0.8"/>` : ''}
+            <text x="${(x + BAR_W / 2).toFixed(1)}" y="${totalH - 2}" text-anchor="middle" fill="#4e5868" font-size="9" font-family="DM Mono,monospace">${esc(label)}</text>`;
+        }).join('');
+
+        el.innerHTML = `<svg width="100%" viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg">
+          ${guides}
+          <line x1="${PAD_L}" x2="${PAD_L}" y1="0" y2="${CHART_H}" stroke="#262c36" stroke-width="1"/>
+          <line x1="${PAD_L}" x2="${totalW}" y1="${CHART_H}" y2="${CHART_H}" stroke="#262c36" stroke-width="1"/>
+          ${bars}
+        </svg>`;
+      }
+
+      function _renderHBar(containerId, items, { labelKey = "label", valueKey = "count", barColor } = {}) {
+        const el = document.getElementById(containerId);
+        if (!items || !items.length) { el.innerHTML = '<div class="a-empty">No data.</div>'; return; }
+        const LABEL_W = 128, BAR_MAX = 190, NUM_W = 36, ROW_H = 26;
+        const totalW = LABEL_W + BAR_MAX + NUM_W;
+        const totalH = items.length * ROW_H + 2;
+        const maxVal = Math.max(...items.map(x => x[valueKey]), 1);
+
+        const rows = items.map((item, i) => {
+          const bw = Math.max((item[valueKey] / maxVal) * BAR_MAX, item[valueKey] > 0 ? 3 : 0);
+          const y  = i * ROW_H;
+          const c  = barColor || item.color || "var(--blue)";
+          return `
+            <text x="${LABEL_W - 8}" y="${(y + ROW_H / 2 + 4).toFixed(1)}" text-anchor="end" fill="#8b95a3" font-size="11" font-family="DM Mono,monospace">${esc(String(item[labelKey]))}</text>
+            <rect x="${LABEL_W}" y="${y + 5}" width="${bw.toFixed(1)}" height="${ROW_H - 10}" rx="3" fill="${c}" opacity="0.75"/>
+            <text x="${(LABEL_W + bw + 7).toFixed(1)}" y="${(y + ROW_H / 2 + 4).toFixed(1)}" fill="#4e5868" font-size="11" font-family="DM Mono,monospace">${item[valueKey]}</text>`;
+        }).join('');
+
+        el.innerHTML = `<svg width="100%" viewBox="0 0 ${totalW} ${totalH}" xmlns="http://www.w3.org/2000/svg">${rows}</svg>`;
+      }
+
+      function _renderSeverityDonut(sevDist) {
+        const el = document.getElementById("chartSeverity");
+        const segments = [
+          { label: "High",   value: sevDist.high   || 0, color: "#ef4444" },
+          { label: "Medium", value: sevDist.medium  || 0, color: "#f59e0b" },
+          { label: "Low",    value: sevDist.low     || 0, color: "#4e5868" },
+          { label: "Clean",  value: sevDist.clean   || 0, color: "#22c55e" },
+        ].filter(s => s.value > 0);
+
+        const total = segments.reduce((s, x) => s + x.value, 0);
+        if (!total) { el.innerHTML = '<div class="a-empty">No cases yet.</div>'; return; }
+
+        const cx = 68, cy = 68, R = 54, r = 33;
+        let angle = -Math.PI / 2;
+
+        const paths = segments.map(seg => {
+          const slice = (seg.value / total) * 2 * Math.PI;
+          const gap   = Math.min(0.05, slice * 0.08);
+          const eff   = slice - gap;
+          if (eff <= 0) return '';
+          const x1 = cx + R * Math.cos(angle),          y1 = cy + R * Math.sin(angle);
+          const x2 = cx + R * Math.cos(angle + eff),    y2 = cy + R * Math.sin(angle + eff);
+          const xi2 = cx + r * Math.cos(angle + eff),   yi2 = cy + r * Math.sin(angle + eff);
+          const xi1 = cx + r * Math.cos(angle),         yi1 = cy + r * Math.sin(angle);
+          const la  = eff > Math.PI ? 1 : 0;
+          const p   = `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${R} ${R} 0 ${la} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L ${xi2.toFixed(2)} ${yi2.toFixed(2)} A ${r} ${r} 0 ${la} 0 ${xi1.toFixed(2)} ${yi1.toFixed(2)} Z`;
+          angle += slice;
+          return `<path d="${p}" fill="${seg.color}" opacity="0.85"/>`;
+        }).join('');
+
+        const legend = segments.map(s =>
+          `<div class="a-legend-item">
+             <div class="a-legend-dot" style="background:${s.color}"></div>
+             <span>${s.label}&nbsp;<strong style="color:#eef0f3">${s.value}</strong></span>
+           </div>`
+        ).join('');
+
+        el.innerHTML = `
+          <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+            <svg width="136" height="136" viewBox="0 0 136 136" xmlns="http://www.w3.org/2000/svg">
+              ${paths}
+              <text x="68" y="63" text-anchor="middle" fill="#eef0f3" font-size="22" font-weight="700" font-family="DM Mono,monospace">${total}</text>
+              <text x="68" y="80" text-anchor="middle" fill="#4e5868" font-size="10" font-family="DM Sans,sans-serif">TOTAL</text>
+            </svg>
+            <div style="display:flex;flex-direction:column;gap:9px;font-size:12px;color:#8b95a3">${legend}</div>
+          </div>`;
+      }
+
+      function _renderClusters(clusters) {
+        const el = document.getElementById("chartClusters");
+        if (!clusters || !clusters.length) {
+          el.innerHTML = '<div class="a-empty">No multi-rule patterns yet.</div>';
+          return;
+        }
+        el.innerHTML = clusters.map(cl => `
+          <div class="a-cluster-row">
+            <div class="a-cluster-rules">
+              ${cl.rules.map((r, i) => `${i > 0 ? '<span class="a-cluster-plus">+</span>' : ''}<span class="case-rule-tag">${esc(r)}</span>`).join('')}
+            </div>
+            <span class="a-cluster-count">${cl.count} case${cl.count !== 1 ? 's' : ''}</span>
+          </div>`).join('');
+      }
+
+      function _renderUserRisk(userRisk) {
+        const el = document.getElementById("chartUserRisk");
+        if (!userRisk || !userRisk.length) {
+          el.innerHTML = '<div class="a-empty">No user data yet — cases need a submitted_by value.</div>';
+          return;
+        }
+
+        const rows = userRisk.map(u => {
+          const pct = Math.round(u.flag_rate * 100);
+          const riskCls = u.flag_rate >= 0.6 ? "high" : u.flag_rate >= 0.3 ? "medium" : "low";
+          const barColor = riskCls === "high" ? "var(--red)" : riskCls === "medium" ? "var(--amber)" : "var(--green)";
+          const actionCls = { removed: "removed", escalated: "escalated", approved: "approved" }[u.last_action] || "pending";
+          return `
+            <tr>
+              <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text-1);font-weight:500">${esc(u.user)}</td>
+              <td style="text-align:center;color:var(--text-1);font-family:'DM Mono',monospace">${u.total}</td>
+              <td style="text-align:center;font-family:'DM Mono',monospace;color:${u.flagged > 0 ? "var(--red)" : "var(--text-3)"}">${u.flagged}</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="width:80px;height:4px;background:var(--surface-3);border-radius:99px;overflow:hidden;flex-shrink:0">
+                    <div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px;transition:width 0.4s ease"></div>
+                  </div>
+                  <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-2);width:32px">${pct}%</span>
+                </div>
+              </td>
+              <td><span class="a-risk-badge a-risk-${riskCls}">${riskCls.toUpperCase()}</span></td>
+              <td><span class="action-badge ${actionCls}">${u.last_action.toUpperCase()}</span></td>
+              <td style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-3)">${esc(u.last_seen)}</td>
+            </tr>`;
+        }).join('');
+
+        el.innerHTML = `
+          <table class="a-user-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th style="text-align:center">Cases</th>
+                <th style="text-align:center">Flagged</th>
+                <th>Flag Rate</th>
+                <th>Risk</th>
+                <th>Last Action</th>
+                <th>Last Seen</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>`;
       }
 
       // ══ Metrics ══
@@ -1780,6 +2905,89 @@
         document.getElementById("m-flagrate").textContent = total
           ? Math.round((flagged / total) * 100) + "%"
           : "0%";
+      }
+
+      // ══ Policy ══
+      function _applyPolicyUI(policy) {
+        activePolicy = policy && policy.content ? policy : null;
+        const hasPolicy = !!activePolicy;
+
+        // Topbar chip
+        const chip = document.getElementById("policyChip");
+        chip.classList.toggle("active", hasPolicy);
+        if (hasPolicy) {
+          document.getElementById("policyChipName").textContent =
+            activePolicy.name || "Policy active";
+        }
+
+        // Sidebar badge
+        const badge = document.getElementById("policyBadge");
+        badge.style.display = hasPolicy ? "" : "none";
+
+        // Policy page: fill form + show preview card
+        if (hasPolicy) {
+          document.getElementById("policyNameInput").value = activePolicy.name || "";
+          document.getElementById("policyContentInput").value = activePolicy.content;
+          document.getElementById("policyCharCount").textContent =
+            activePolicy.content.length + " chars";
+          document.getElementById("policyPreviewText").textContent = activePolicy.content;
+          const ts = new Date(activePolicy.updated_at);
+          document.getElementById("policyUpdatedAt").textContent =
+            "Saved " + ts.toLocaleDateString() + " " +
+            ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+          document.getElementById("policyActiveSection").style.display = "";
+        } else {
+          document.getElementById("policyActiveSection").style.display = "none";
+        }
+      }
+
+      async function loadPolicy() {
+        try {
+          const res = await fetch("/policy");
+          if (!res.ok) return;
+          const data = await res.json();
+          _applyPolicyUI(data);
+        } catch (e) {
+          console.warn("Could not load policy:", e);
+        }
+      }
+
+      async function savePolicy() {
+        const name = document.getElementById("policyNameInput").value.trim();
+        const content = document.getElementById("policyContentInput").value.trim();
+        if (!content) {
+          showErr("policyError", "Enter your community guidelines before saving.");
+          return;
+        }
+        const btn = document.getElementById("policyBtn");
+        setLoading(btn, true);
+        document.getElementById("policyError").style.display = "none";
+        try {
+          const res = await fetch("/policy", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, content }),
+          });
+          if (!res.ok) throw new Error("Failed to save policy.");
+          const data = await res.json();
+          _applyPolicyUI(data);
+        } catch (e) {
+          showErr("policyError", e.message);
+        } finally {
+          setLoading(btn, false);
+        }
+      }
+
+      async function clearPolicy() {
+        try {
+          await fetch("/policy", { method: "DELETE" });
+          document.getElementById("policyNameInput").value = "";
+          document.getElementById("policyContentInput").value = "";
+          document.getElementById("policyCharCount").textContent = "0 chars";
+          _applyPolicyUI(null);
+        } catch (e) {
+          console.warn("Could not clear policy:", e);
+        }
       }
 
       // ══ Batch ══
@@ -1908,6 +3116,12 @@
           document.getElementById("batchLineCount").textContent =
             n + " line" + (n !== 1 ? "s" : "");
         });
+      document
+        .getElementById("policyContentInput")
+        .addEventListener("input", function () {
+          document.getElementById("policyCharCount").textContent =
+            this.value.length + " chars";
+        });
       document.querySelectorAll(".quick-case").forEach((el) => {
         el.addEventListener(
           "mouseenter",
@@ -1919,7 +3133,9 @@
         );
       });
 
-      updateMetrics();
+      loadCasesFromDB();
+      loadPolicy();
+      loadArchivedCases();
     </script>
   </body>
 </html>
